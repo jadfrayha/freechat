@@ -22,6 +22,9 @@ freechat/
 - Random 1-on-1 matching, with optional interests (people who share an interest are matched first; after 8 seconds anyone is fair game)
 - Skip / next (press twice to confirm, or press Esc twice on a keyboard)
 - "Stranger is typing" indicator, unread count in the browser tab
+- Optional nickname, shown to the person you're chatting with
+- Add friend: both people agree, then they can invite each other to chat whenever both are online. Friends are saved on each device (no accounts), so clearing the browser removes them
+- Photos: anyone can send one; it arrives blurred until the receiver taps it. Photos are resized in the browser, which also strips location data, and are never stored on the server
 - English / Arabic switch, remembers the choice, auto-picks Arabic for Arabic phones
 - Safety built in:
   - 18+ confirmation before anyone can chat

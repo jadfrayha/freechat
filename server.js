@@ -18,6 +18,8 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => 
 const IP_SALT = process.env.IP_SALT || crypto.randomBytes(16).toString('hex');
 const TRUST_PROXY = process.env.TRUST_PROXY !== 'false';           // true on Render/Railway/Fly
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const MAX_IMG_BYTES = Number(process.env.MAX_IMG_BYTES) || 600 * 1024; // photos are resized in the browser first
+const IMG_GAP_MS = 2500;                                          // at most one photo every 2.5 s
 
 // ---------- Static files ----------
 const TYPES = {
@@ -70,7 +72,7 @@ const server = http.createServer((req, res) => {
 
 // ---------- Minimal WebSocket (RFC 6455) ----------
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-const MAX_FRAME = 16 * 1024;
+const MAX_FRAME = 900 * 1024;                                    // room for one compressed photo
 
 function clientIp(req) {
   // Behind Render/Railway/Fly the real IP is the first x-forwarded-for entry.
@@ -165,6 +167,7 @@ class WSConn {
 const clients = new Map();   // id -> client
 const queue = [];            // ids waiting for a partner
 const connsPerIp = new Map();
+const byPub = new Map();     // public friend code -> client (for friends & presence)
 
 function cleanText(s) {
   if (typeof s !== 'string') return '';
@@ -175,6 +178,24 @@ function cleanText(s) {
     t = t.replace(/\b((https?:\/\/|www\.)\S+|[a-z0-9-]+\.(com|net|org|io|me|gg|ly|co|xyz|app|link|site|online|ru|tk)(\/\S*)?)/gi, '[link removed]');
   }
   return t;
+}
+
+function cleanName(s) {
+  return cleanText(typeof s === 'string' ? s : '').replace(/\s+/g, ' ').replace(/\[link removed\]/g, '').slice(0, 20).trim();
+}
+
+const pubFor = key => crypto.createHash('sha256').update('fc-pub:' + key).digest('hex').slice(0, 24);
+
+function checkImage(data) {
+  if (typeof data !== 'string' || data.length > MAX_IMG_BYTES * 1.4) return false;
+  const m = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(data);
+  if (!m) return false;
+  const head = Buffer.from(m[2].slice(0, 24), 'base64');
+  if (head.length > MAX_IMG_BYTES) return false;
+  const jpeg = head[0] === 0xFF && head[1] === 0xD8;
+  const png = head[0] === 0x89 && head.toString('latin1', 1, 4) === 'PNG';
+  const webp = head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP';
+  return { jpeg, png, webp }[m[1]] === true;
 }
 
 function cleanInterests(list) {
@@ -208,12 +229,13 @@ function canPair(a, b) {
     !a.blocked.has(b.id) && !b.blocked.has(a.id);
 }
 
-function pair(a, b, common) {
+function pair(a, b, common, friend = false) {
   leaveQueue(a); leaveQueue(b);
   a.state = b.state = 'chatting';
   a.partner = b.id; b.partner = a.id;
-  a.ws.send({ t: 'matched', common });
-  b.ws.send({ t: 'matched', common });
+  a.friendReq = b.friendReq = null;
+  a.ws.send({ t: 'matched', common, name: b.name, friend, id: friend ? b.pub : undefined });
+  b.ws.send({ t: 'matched', common, name: a.name, friend, id: friend ? a.pub : undefined });
 }
 
 function tryMatch(c) {
@@ -231,6 +253,12 @@ function tryMatch(c) {
   if (fallback) pair(c, fallback, []);
 }
 
+function makeFriends(a, b) {
+  a.friendReq = b.friendReq = null;
+  a.ws.send({ t: 'friendAdded', id: b.pub, name: b.name });
+  b.ws.send({ t: 'friendAdded', id: a.pub, name: a.name });
+}
+
 setInterval(() => { for (const id of [...queue]) { const c = clients.get(id); if (c) tryMatch(c); } }, 1000).unref();
 
 function onMessage(c, raw) {
@@ -241,7 +269,12 @@ function onMessage(c, raw) {
   if (m.t === 'hello') {
     if (m.adult !== true) return c.ws.send({ t: 'error', code: 'age' });
     c.agreed = true;
-    return c.ws.send({ t: 'ready', online: clients.size });
+    c.name = cleanName(m.name);
+    // The device keeps a secret key; others only ever see the derived public code.
+    const key = typeof m.key === 'string' && /^[a-f0-9]{32,64}$/.test(m.key) ? m.key : crypto.randomBytes(16).toString('hex');
+    c.pub = pubFor(key);
+    byPub.set(c.pub, c);
+    return c.ws.send({ t: 'ready', online: clients.size, id: c.pub });
   }
   if (!c.agreed) return c.ws.send({ t: 'error', code: 'age' });
 
@@ -252,6 +285,7 @@ function onMessage(c, raw) {
         if (p) { c.blocked.add(p.id); p.blocked.add(c.id); }
         endChat(c, 'skipped');
       }
+      c.inviting = null;
       c.interests = cleanInterests(m.interests);
       c.state = 'waiting';
       c.waitingSince = Date.now();
@@ -286,6 +320,74 @@ function onMessage(c, raw) {
       p.ws.send({ t: 'msg', text });
       return c.ws.send({ t: 'sent', id: typeof m.id === 'string' ? m.id.slice(0, 20) : '', text });
     }
+    case 'name':
+      c.name = cleanName(m.name);
+      return;
+    case 'img': {
+      if (c.state !== 'chatting') return;
+      const now = Date.now();
+      if (now - c.lastImg < IMG_GAP_MS) return c.ws.send({ t: 'error', code: 'slow', id: m.id });
+      if (!checkImage(m.data)) return c.ws.send({ t: 'error', code: 'img', id: m.id });
+      c.lastImg = now;
+      const p = clients.get(c.partner);
+      if (!p) return;
+      p.ws.send({ t: 'img', data: m.data });
+      return c.ws.send({ t: 'imgSent', id: typeof m.id === 'string' ? m.id.slice(0, 20) : '' });
+    }
+    case 'friendReq': {
+      const p = c.state === 'chatting' && clients.get(c.partner);
+      if (!p || c.friendReq === p.id) return;
+      c.friendReq = p.id;
+      if (p.friendReq === c.id) return makeFriends(c, p);   // both asked: done
+      return p.ws.send({ t: 'friendReq', name: c.name });
+    }
+    case 'friendAccept': {
+      const p = c.state === 'chatting' && clients.get(c.partner);
+      if (p && p.friendReq === c.id) makeFriends(c, p);
+      return;
+    }
+    case 'friendDecline': {
+      const p = c.state === 'chatting' && clients.get(c.partner);
+      if (p && p.friendReq === c.id) { p.friendReq = null; p.ws.send({ t: 'friendDeclined' }); }
+      return;
+    }
+    case 'presence': {
+      if (!Array.isArray(m.ids)) return;
+      const online = [];
+      for (const id of m.ids.slice(0, 300)) {
+        const o = typeof id === 'string' && byPub.get(id);
+        if (o && o.agreed) online.push({ id, name: o.name, busy: o.state === 'chatting' });
+      }
+      return c.ws.send({ t: 'presence', online });
+    }
+    case 'invite': {
+      const now = Date.now();
+      if (now - c.lastInvite < 3000) return;
+      c.lastInvite = now;
+      const o = typeof m.id === 'string' && byPub.get(m.id);
+      if (!o || !o.agreed || o === c) return c.ws.send({ t: 'inviteFail', reason: 'offline' });
+      c.inviting = o.id;
+      leaveQueue(c);
+      return o.ws.send({ t: 'invite', from: c.pub, name: c.name });
+    }
+    case 'inviteCancel':
+      c.inviting = null;
+      return;
+    case 'inviteAccept': {
+      const inv = typeof m.id === 'string' && byPub.get(m.id);
+      if (!inv || inv.inviting !== c.id) return c.ws.send({ t: 'inviteGone' });
+      inv.inviting = null;
+      for (const x of [inv, c]) {
+        if (x.state === 'chatting') { endChat(x, 'left'); }
+        leaveQueue(x);
+      }
+      return pair(inv, c, [], true);
+    }
+    case 'inviteDecline': {
+      const inv = typeof m.id === 'string' && byPub.get(m.id);
+      if (inv && inv.inviting === c.id) { inv.inviting = null; inv.ws.send({ t: 'inviteFail', reason: 'declined' }); }
+      return;
+    }
     case 'typing': {
       const p = c.state === 'chatting' && clients.get(c.partner);
       if (p) p.ws.send({ t: 'typing', on: !!m.on });
@@ -316,12 +418,14 @@ server.on('upgrade', (req, socket) => {
     id: crypto.randomBytes(8).toString('hex'), ipHash, state: 'idle', partner: null,
     interests: [], blocked: new Set(), agreed: false, waitingSince: 0,
     tokens: 6, lastRefill: Date.now(), strikes: 0, ws: null,
+    name: '', pub: '', friendReq: null, inviting: null, lastImg: 0, lastInvite: 0,
   };
   connsPerIp.set(ipHash, n + 1);
   c.ws = new WSConn(socket, raw => onMessage(c, raw), () => {
     leaveQueue(c);
     if (c.state === 'chatting') endChat(c, 'disconnected');
     clients.delete(c.id);
+    if (c.pub && byPub.get(c.pub) === c) byPub.delete(c.pub);
     const left = (connsPerIp.get(ipHash) || 1) - 1;
     if (left <= 0) connsPerIp.delete(ipHash); else connsPerIp.set(ipHash, left);
   });

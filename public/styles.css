@@ -302,3 +302,51 @@ dialog::backdrop { background: rgb(10 14 30 / .5); }
 .about summary { cursor: pointer; font-weight: 500; }
 .about details p { margin: 8px 0 0; }
 @media (max-width: 860px) { .about { grid-template-columns: 1fr; } }
+
+/* ---------- Nickname, friends, photos, toast ---------- */
+.text-in {
+  width: 100%; border: 1.5px solid var(--line); border-radius: 14px; background: var(--shore);
+  padding: 11px 12px; font: inherit; font-size: 16px; color: var(--ink);
+}
+.text-in:focus { outline: 0; border-color: var(--cobalt); }
+.friends { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.friends h2 { font-size: 18px; margin: 0 0 8px; }
+.friends ul { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
+.friends li { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.friends .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.friends .state { font-size: 13px; color: var(--ink-2); }
+.pdot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); flex: none; }
+.pdot.on { background: var(--live); }
+.btn.small { padding: 6px 12px; font-size: 14px; border-radius: 10px; }
+.friends .forget { background: none; border: 0; color: var(--ink-2); padding: 4px 6px; font-size: 18px; line-height: 1; }
+.small { font-size: 13px; }
+#addFriendBtn { white-space: nowrap; }
+.btn.icon { padding: 0; width: 48px; display: grid; place-items: center; color: var(--ink); }
+
+.msg.photo { padding: 4px; background: transparent; border: 1px solid var(--line); position: relative; }
+.msg.photo.you { border-color: var(--cobalt); }
+.msg.photo img { display: block; max-width: min(260px, 60vw); max-height: 320px; border-radius: 16px; cursor: zoom-in; }
+.msg.photo.blurred img { filter: blur(26px) saturate(.6); cursor: default; }
+.msg.photo .reveal {
+  position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+  background: transparent; border: 0; color: #fff; font-weight: 600; font-size: 15px;
+  text-shadow: 0 1px 6px rgb(0 0 0 / .6); padding: 12px;
+}
+.msg.photo { overflow: hidden; }
+.msg.photo.pending img { opacity: .6; }
+
+.toast {
+  position: fixed; z-index: 50; inset-inline: 0; margin: 0 auto;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px)); width: min(440px, calc(100vw - 32px));
+  background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 12px 40px rgb(10 14 30 / .22); padding: 16px;
+}
+.toast p { margin: 0 0 12px; font-weight: 500; }
+.toast-actions { display: flex; gap: 8px; }
+.sys .row { display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.sys .row .btn { margin-top: 0; }
+
+.viewer { max-width: min(96vw, 1000px); padding: 12px; background: var(--card); }
+.viewer img { display: block; max-width: 100%; max-height: 80vh; border-radius: 12px; margin: 0 auto; }
+.viewer form { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+@media (max-width: 520px) { #addFriendBtn { padding-inline: 10px; font-size: 14px; } .btn.icon { width: 44px; } }
