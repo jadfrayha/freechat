@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>freechat — talk to a stranger</title>
+  <meta name="description" content="Free anonymous one-on-one chat. No sign-up. Meet someone new in English or Arabic.">
+  <meta name="theme-color" content="#2F4BFF">
+  <meta property="og:title" content="freechat — talk to a stranger">
+  <meta property="og:description" content="Free anonymous one-on-one chat. No sign-up.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- ============ Landing ============ -->
+  <div class="screen" id="landing">
+    <header class="topbar">
+      <a class="wordmark" href="/" aria-label="freechat home">free<span>chat</span></a>
+      <nav class="topnav">
+        <button class="link" data-open="rules" data-i18n="rules">Rules</button>
+        <button class="lang" id="langBtn" aria-label="Switch language">عربي</button>
+      </nav>
+    </header>
+
+    <main class="hero">
+      <section class="stage" aria-hidden="true">
+        <div class="bubble them b1" data-i18n="heroA">Hey, who's this?</div>
+        <div class="typing-dots b2"><i></i><i></i><i></i></div>
+        <div class="bubble you b3" data-i18n="heroB">Nobody you know. That's the point.</div>
+        <div class="bubble them b4" data-i18n="heroC">Fair. So what are you into?</div>
+      </section>
+
+      <section class="start" aria-labelledby="startTitle">
+        <h1 id="startTitle" data-i18n="title">Talk to a stranger.</h1>
+        <p class="lede" data-i18n="lede">One-on-one, anonymous, free. No account, no names, nothing saved.</p>
+
+        <p class="online" hidden><span class="dot"></span> <b id="onlineCount">—</b> <span data-i18n="online">people online now</span></p>
+
+        <form id="startForm" novalidate>
+          <label class="field">
+            <span data-i18n="interestsLabel">Interests (optional)</span>
+            <div class="tags" id="tagBox">
+              <input id="tagInput" maxlength="24" autocomplete="off" data-i18n-ph="interestsPh" placeholder="music, football, Beirut… press Enter">
+            </div>
+            <small data-i18n="interestsHint">We'll try to match you with someone who shares one.</small>
+          </label>
+
+          <label class="check">
+            <input type="checkbox" id="adultChk">
+            <span><span data-i18n="adult">I'm 18 or older and I agree to the</span> <button type="button" class="link" data-open="rules" data-i18n="rulesLower">rules</button>.</span>
+          </label>
+          <p class="form-error" id="formError" role="alert"></p>
+
+          <div class="notice" role="note">
+            <strong data-i18n="noticeTitle">Stay safe</strong>
+            <p data-i18n="noticeBody">Never send anything that could harm you: your name, phone number, address, photos, or social accounts. If a chat feels wrong, press Skip.</p>
+          </div>
+
+          <button class="btn primary big" id="startBtn" type="submit" data-i18n="start">Start chatting</button>
+        </form>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <button class="link" data-open="rules" data-i18n="rules">Rules</button>
+      <button class="link" data-open="privacy" data-i18n="privacy">Privacy</button>
+      <span class="muted">© <span id="year"></span> freechat</span>
+    </footer>
+  </div>
+
+  <!-- ============ Chat ============ -->
+  <div class="screen chat" id="chat" hidden>
+    <header class="chatbar">
+      <a class="wordmark small" href="/" id="homeLink">free<span>chat</span></a>
+      <div class="status" id="status" aria-live="polite"></div>
+    </header>
+
+    <main class="log" id="log" aria-live="polite"></main>
+
+    <footer class="composer">
+      <button class="btn skip" id="skipBtn" title="Esc"><span data-i18n="skip">Skip</span></button>
+      <textarea id="msgInput" rows="1" maxlength="1000" data-i18n-ph="typePh" placeholder="Type a message" disabled></textarea>
+      <button class="btn primary" id="sendBtn" disabled data-i18n="send">Send</button>
+    </footer>
+  </div>
+
+  <!-- ============ Dialogs ============ -->
+  <dialog id="rules">
+    <form method="dialog" class="dlg">
+      <h2 data-i18n="rulesTitle">The rules</h2>
+      <ol class="rules-list" data-i18n-list="rulesList">
+        <li>You must be 18 or older.</li>
+        <li>Be decent. No harassment, hate, threats, or bullying.</li>
+        <li>No sexual content, and never anything involving minors. We report it to the authorities.</li>
+        <li>No spam, ads, scams, or links. Links are removed automatically.</li>
+        <li>Protect yourself: don't share your name, number, address, or socials with strangers.</li>
+        <li>If someone makes you uncomfortable, press Skip. You won't be matched with them again.</li>
+      </ol>
+      <button class="btn primary" value="ok" data-i18n="gotIt">Got it</button>
+    </form>
+  </dialog>
+
+  <dialog id="privacy">
+    <form method="dialog" class="dlg">
+      <h2 data-i18n="privacyTitle">Privacy</h2>
+      <div data-i18n-list="privacyList" class="prose">
+        <p>Messages go straight from you to the other person. We don't save them.</p>
+        <p>We don't ask for your name, email, or phone number.</p>
+        <p>To limit spam, we keep a scrambled (hashed) version of your IP address only while you're connected.</p>
+        <p>No ads and no tracking cookies.</p>
+      </div>
+      <button class="btn primary" value="ok" data-i18n="gotIt">Got it</button>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
