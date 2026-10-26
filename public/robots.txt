@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://freechat-jfnk.onrender.com/sitemap.xml
