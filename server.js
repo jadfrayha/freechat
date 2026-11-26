@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 const bot = require('./bot');
 
 const PORT = process.env.PORT || 3000;
+const SKIP_AFTER = 3 * 60 * 1000; // minimum time before a game can be skipped
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
@@ -27,7 +28,7 @@ const to = (id, ev, data) => { const s = sock(id); if (s) s.emit(ev, data); };
 const transcript = (g, me, other, meIs) => g.msgs.map(m => `${m.from === meIs ? me : other}: ${m.text}`).join('\n');
 
 function newGame(mode, truth, det, act) {
-  const g = { id: ++gid, mode, truth, det, act, msgs: [], over: false, busy: false, aiCalls: 0 };
+  const g = { id: ++gid, mode, truth, det, act, msgs: [], over: false, busy: false, aiCalls: 0, start: Date.now() };
   games.set(g.id, g);
   for (const id of [det, act]) { const s = sock(id); if (s) s.data.game = g.id; }
   return g;
@@ -157,6 +158,17 @@ io.on('connection', s => {
     s.emit('result', { kind: 'det', ok: vote === g.truth, vote, truth: g.truth, mode: g.mode });
     if (g.act) to(g.act, 'result', { kind: 'act', fooled: vote === 'ai', reason: '' });
     endGame(g);
+  });
+
+  // Every game lasts at least 3 minutes before the player may skip it.
+  s.on('skip', () => {
+    const g = games.get(s.data.game); if (!g || g.over) return;
+    const left = Date.now() - g.start;
+    if (left < SKIP_AFTER) return s.emit('skipWait', { ms: SKIP_AFTER - left });
+    const other = g.det === s.id ? g.act : g.det;
+    if (other) to(other, 'left');
+    endGame(g);
+    s.emit('skipped');
   });
 
   s.on('leave', () => { leave(s); waiting.delete(s.id); counts(); });
