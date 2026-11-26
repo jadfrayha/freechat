@@ -194,7 +194,7 @@ function showResult(h,p){stopSkip();$('#rH').textContent=h;$('#rP').textContent=
 let skipEnd=0,skipT=null;
 const fmt=ms=>{const s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 function skipTick(){const b=$('#skip');if(!b)return;const r=skipEnd-Date.now();const locked=r>0;b.disabled=locked;b.textContent=locked?t('skipIn',{t:fmt(r)}):t('skip');document.querySelectorAll('.v').forEach(v=>v.disabled=locked||over);const h=$('#vlock');if(h)h.textContent=locked?t('voteLock',{t:fmt(r)}):t('hint');if(!locked){clearInterval(skipT);skipT=null}}
-function startSkip(){skipEnd=Date.now()+180000;startSkipTick()}
+function startSkip(){skipEnd=Date.now()+90000;startSkipTick()}
 function startSkipTick(){clearInterval(skipT);skipT=setInterval(skipTick,500);skipTick()}
 function stopSkip(){skipEnd=0;clearInterval(skipT);skipT=null;const b=$('#skip');if(b){b.disabled=true;b.textContent=''}document.querySelectorAll('.v').forEach(v=>v.disabled=true)}
 const socket=io();

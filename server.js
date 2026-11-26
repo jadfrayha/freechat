@@ -8,7 +8,7 @@ const { Server } = require('socket.io');
 const bot = require('./bot');
 
 const PORT = process.env.PORT || 3000;
-const SKIP_AFTER = 3 * 60 * 1000; // minimum time before a game can be skipped
+const SKIP_AFTER = 90 * 1000; // minimum time before a game can be skipped or voted on (1:30)
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
