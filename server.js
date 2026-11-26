@@ -154,6 +154,8 @@ io.on('connection', s => {
 
   s.on('vote', v => {
     const g = games.get(s.data.game); if (!g || g.over || g.det !== s.id) return;
+    const left = Date.now() - g.start;
+    if (left < SKIP_AFTER) return s.emit('voteWait', { ms: SKIP_AFTER - left });
     const vote = v === 'ai' ? 'ai' : 'human';
     s.emit('result', { kind: 'det', ok: vote === g.truth, vote, truth: g.truth, mode: g.mode });
     if (g.act) to(g.act, 'result', { kind: 'act', fooled: vote === 'ai', reason: '' });
