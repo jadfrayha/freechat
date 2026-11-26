@@ -1,13 +1,12 @@
 # Bot or Faker
 
-A live chat game. **Detectives** chat with a subject that claims to be an AI and vote: *Real AI* or *Human faking*. **Fakers** are humans trying to pass as an AI (with AI-style reply suggestions). When no faker is waiting, Claude plays one, so a round always starts. English + Arabic.
+A live chat game. **Detectives** chat with a subject that claims to be an AI and vote: *Real AI* or *Human faking*. **Fakers** are humans trying to pass as an AI (with AI-style reply suggestions). When no faker is waiting, the built-in bot plays one, so a round always starts. English, Lebanese and Arabic.
 
-## Run locally
+The bot (`bot.js`) is free and runs inside the server — no API key needed.
+
 ```
 npm install
-ANTHROPIC_API_KEY=sk-ant-... npm start
+npm start   # http://localhost:3000
 ```
-Open http://localhost:3000
 
-## Deploy on Render
-New → Blueprint → pick this repo (uses `render.yaml`), then set `ANTHROPIC_API_KEY` in the service's Environment tab.
+The previous freechat site is kept on the `freechat-backup` branch.
