@@ -1,182 +1,237 @@
-<!doctype html>
-<html lang="en" dir="ltr">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Free Chat with Strangers, No Sign-up | freechat دردشة مجانية</title>
-  <meta name="description" content="Free anonymous chat with strangers. No sign-up, no app, one-on-one in English or Arabic. دردشة مجانية مع ناس جداد بدون تسجيل، شات لبنان والعالم العربي.">
-  <link rel="canonical" href="https://freechat-jfnk.onrender.com/">
-  <meta name="robots" content="index, follow">
-  <meta name="theme-color" content="#2F4BFF">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="freechat">
-  <meta property="og:url" content="https://freechat-jfnk.onrender.com/">
-  <meta property="og:title" content="freechat: free chat with strangers">
-  <meta property="og:description" content="Anonymous one-on-one chat. No sign-up. English and Arabic. دردشة مجانية بدون تسجيل.">
-  <meta property="og:image" content="https://freechat-jfnk.onrender.com/og.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:locale" content="en_US">
-  <meta property="og:locale:alternate" content="ar_LB">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/icon-180.png">
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"freechat","alternateName":["Free Chat","دردشة مجانية"],"url":"https://freechat-jfnk.onrender.com/","inLanguage":["en","ar"]},{"@type":"WebApplication","name":"freechat","url":"https://freechat-jfnk.onrender.com/","applicationCategory":"CommunicationApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"inLanguage":["en","ar"],"description":"Free anonymous one-on-one chat with strangers. No sign-up."},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is freechat really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. There is no payment, no account and no app to install."}},{"@type":"Question","name":"Do I need to sign up?","acceptedAnswer":{"@type":"Answer","text":"No. Tick the 18+ box and press Start chatting. You are matched with a random person right away."}},{"@type":"Question","name":"Are my chats saved?","acceptedAnswer":{"@type":"Answer","text":"No. Messages go straight to the other person and are never stored."}},{"@type":"Question","name":"هل الدردشة مجانية؟","acceptedAnswer":{"@type":"Answer","text":"إي، مجانية بالكامل، بلا تسجيل وبلا تطبيق."}}]}]}</script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bot or Faker — Real AI or human faking it?</title>
+<meta name="description" content="A free online game: chat with a subject that claims to be an AI and guess — real AI, or a human faking it? Or put on the mask and fool the detective. English and Arabic.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Inter:wght@400;500;600;700&family=Cairo:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#fafaf8,#121212);--ink:light-dark(#151515,#f0eee9);--mut:light-dark(#5f5e5a,#a5a29b);--card:light-dark(#fff,#1c1c1b);--line:light-dark(#e3e1db,#2e2d2a);--red:light-dark(#d92f25,#ff5b4f);--steel:light-dark(#2d5b88,#86b6e6);--wash:light-dark(#eaf0f6,#1b2431);--body:Inter,system-ui,sans-serif;--head:"Big Shoulders Display",Impact,sans-serif}
+html[lang=ar]{--body:Cairo,Inter,system-ui,sans-serif;--head:Cairo,sans-serif}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);overflow-x:clip}
+[hidden]{display:none!important}
+.band{padding:clamp(20px,3.5vw,48px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto}
+.top{background:#151515;color:#f0eee9;padding-block:22px}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px}
+h1,h2,.big{font-family:var(--head);font-weight:800;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(36px,5vw,50px)}
+.tag{margin:4px 0 0;opacity:.8;font-size:15px}
+.tr{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{font-size:13px;padding:7px 13px;border:1px solid #444;border-radius:99px}
+.pill i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3ccf6e;margin-inline-end:7px}
+.lang{font:600 14px var(--body);min-height:40px;padding:0 14px;border-radius:99px;border:1px solid #555;background:transparent;color:#f0eee9;cursor:pointer}
+.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.role{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.role svg{width:100%;height:200px;border-radius:12px;display:block}
+.det svg{background:var(--wash)}.act svg{background:color-mix(in srgb,var(--red) 12%,var(--card))}
+h2{font-size:36px}
+.role p{margin:0;color:var(--mut)}
+.btn{font:600 16px var(--body);min-height:48px;padding:0 20px;border-radius:12px;border:0;cursor:pointer;background:var(--ink);color:var(--bg)}
+.btn.red{background:var(--red);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,input:focus-visible,.lang:focus-visible{outline:3px solid var(--steel);outline-offset:2px}
+.role .btn{margin-top:auto;align-self:flex-start}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:28px}
+.how b{display:block}.how span{color:var(--mut);font-size:15px}
+.gwrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;max-width:1180px;margin:0 auto}
+.chat{background:var(--card);border:1px solid var(--line);border-radius:18px;display:flex;flex-direction:column;height:min(640px,calc(100vh - 150px));min-height:420px;overflow:hidden}
+.chead{display:flex;align-items:center;gap:12px;padding:12px 14px 12px 18px;border-bottom:1px solid var(--line)}
+.chead b{white-space:nowrap}.chead small{color:var(--red);flex:1}
+.chead .btn{min-height:40px;padding:0 14px;font-size:14px}
+.log{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:78%;padding:10px 14px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.them{background:var(--wash);border-end-start-radius:4px;align-self:flex-start}
+.me{background:var(--ink);color:var(--bg);border-end-end-radius:4px;align-self:flex-end}
+.sys{align-self:center;color:var(--mut);font-size:13px;text-align:center;max-width:90%}
+form{display:flex;gap:10px;padding:12px;border-top:1px solid var(--line)}
+input{flex:1;font:16px var(--body);min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);unicode-bidi:plaintext}
+.side{display:flex;flex-direction:column;gap:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+.box h3{margin:0 0 10px;font-size:16px}
+.lbl{color:var(--mut);font-size:14px}
+.v{width:100%;margin-bottom:10px}
+.tips{margin:0;padding-inline-start:18px;color:var(--mut);font-size:15px}
+.sug{display:block;width:100%;text-align:start;font:14px/1.4 var(--body);min-height:44px;padding:9px 12px;margin-bottom:8px;border-radius:12px;border:1px solid var(--line);background:var(--wash);color:var(--ink);cursor:pointer;unicode-bidi:plaintext}
+.sug:hover{border-color:var(--steel)}.sug:focus-visible{outline:3px solid var(--steel);outline-offset:2px}
+.waitc{max-width:560px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.radar{width:120px;height:120px;border-radius:50%;border:3px solid var(--red);position:relative;margin:10px 0}
+.radar::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:3px solid var(--red);animation:pulse 1.8s ease-out infinite}
+@keyframes pulse{to{transform:scale(1.6);opacity:0}}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:16px;z-index:9}
+.ov .box{max-width:440px;width:100%;text-align:center;display:flex;flex-direction:column;gap:12px}
+.ov h2{font-size:48px}
+.foot{color:var(--mut);font-size:14px;text-align:center;padding-top:0}
+.off{background:var(--red);color:#fff;text-align:center;font-size:14px;padding:8px 16px}
+@media(max-width:760px){.roles,.how{grid-template-columns:minmax(0,1fr)}.gwrap{grid-template-columns:minmax(0,1fr)}.side{order:-1}.chat{height:64vh}.m{max-width:88%}#actPanel .tipsWrap{display:none}}
+@media(prefers-reduced-motion:reduce){.radar::after{animation:none}}
+</style>
 </head>
 <body>
-  <!-- ============ Landing ============ -->
-  <div class="screen" id="landing">
-    <header class="topbar">
-      <a class="wordmark" href="/" aria-label="freechat home">free<span>chat</span></a>
-      <nav class="topnav">
-        <button class="link" data-open="rules" data-i18n="rules">Rules</button>
-        <button class="lang" id="langBtn" aria-label="Switch language">عربي</button>
-      </nav>
-    </header>
+<div class="off" id="off" hidden data-t="offline"></div>
+<header class="top band"><div class="wrap">
+  <div><h1 data-t="title"></h1><p class="tag" data-t="tag"></p></div>
+  <div class="tr"><span class="pill"><i></i><span id="online"></span></span><button class="lang" id="lang"></button></div>
+</div></header>
 
-    <main class="hero">
-      <section class="stage" aria-hidden="true">
-        <div class="bubble them b1" data-i18n="heroA">Hey, who's this?</div>
-        <div class="typing-dots b2"><i></i><i></i><i></i></div>
-        <div class="bubble you b3" data-i18n="heroB">Nobody you know. That's the point.</div>
-        <div class="bubble them b4" data-i18n="heroC">Fair. So what are you into?</div>
-      </section>
-
-      <section class="start" aria-labelledby="startTitle">
-        <h1 id="startTitle" data-i18n="title">Talk to a stranger.</h1>
-        <p class="lede" data-i18n="lede">One-on-one, anonymous, free. No account, no sign-up, nothing saved.</p>
-
-        <p class="online" hidden><span class="dot"></span> <b id="onlineCount">—</b> <span data-i18n="online">people online now</span></p>
-
-        <form id="startForm" novalidate>
-          <label class="field">
-            <span data-i18n="nickLabel">Nickname (optional)</span>
-            <input class="text-in" id="nickInput" maxlength="20" autocomplete="off" data-i18n-ph="nickPh" placeholder="What should people call you?">
-          </label>
-
-          <label class="field">
-            <span data-i18n="interestsLabel">Interests (optional)</span>
-            <div class="tags" id="tagBox">
-              <input id="tagInput" maxlength="24" autocomplete="off" data-i18n-ph="interestsPh" placeholder="music, football, Beirut… press Enter">
-            </div>
-            <small data-i18n="interestsHint">We'll try to match you with someone who shares one.</small>
-          </label>
-
-          <label class="check">
-            <input type="checkbox" id="adultChk">
-            <span><span data-i18n="adult">I'm 18 or older and I agree to the</span> <button type="button" class="link" data-open="rules" data-i18n="rulesLower">rules</button>.</span>
-          </label>
-          <p class="form-error" id="formError" role="alert"></p>
-
-          <div class="notice" role="note">
-            <strong data-i18n="noticeTitle">Stay safe</strong>
-            <p data-i18n="noticeBody">Never send anything that could harm you: your name, phone number, address, photos, or social accounts. If a chat feels wrong, press Skip.</p>
-          </div>
-
-          <button class="btn primary big" id="startBtn" type="submit" data-i18n="start">Start chatting</button>
-        </form>
-
-        <div class="friends" id="friends" hidden>
-          <h2 data-i18n="friendsTitle">Your friends</h2>
-          <ul id="friendList"></ul>
-          <p class="muted small" data-i18n="friendsHint">Saved on this device. Clearing your browser removes them.</p>
-        </div>
-      </section>
-    </main>
-
-    <section class="about" aria-label="About freechat">
-      <div class="about-col" lang="en" dir="ltr">
-        <h2>Free chat with strangers, the simple way</h2>
-        <p>freechat connects you with one random person for a private, anonymous conversation. No account, no app, no email. Open the page, press Start chatting, and say hi.</p>
-        <details><summary>Is it really free?</summary><p>Yes. No payment, no premium tier, no ads.</p></details>
-        <details><summary>Do I need to sign up?</summary><p>No. Confirm you're 18 or older and you're matched right away.</p></details>
-        <details><summary>Can I choose who I talk to?</summary><p>Add interests like music, football or Beirut, and we'll match you with someone who shares one. Press Skip to meet someone else.</p></details>
-        <details><summary>Are my chats saved?</summary><p>No. Messages go straight to the other person and are never stored.</p></details>
-      </div>
-      <div class="about-col" lang="ar" dir="rtl">
-        <h2>دردشة مجانية مع ناس جداد</h2>
-        <p>freechat بيوصلك بشخص عشوائي لمحادثة خاصة ومجهولة. بلا حساب، بلا تطبيق، بلا إيميل. شات لبنان والعالم العربي، بالعربي أو بالإنكليزي.</p>
-        <details><summary>هل الدردشة مجانية؟</summary><p>إي، مجانية بالكامل. لا اشتراك ولا إعلانات.</p></details>
-        <details><summary>لازم سجّل؟</summary><p>لا. أكّد إنو عمرك ١٨ أو أكتر وبتبلّش تحكي فوراً.</p></details>
-        <details><summary>فيني إختار مع مين إحكي؟</summary><p>زيد اهتماماتك متل موسيقى أو فوتبول أو بيروت، ومنوصلك بحدا عنده نفس الاهتمام. اضغط تخطّي لتتعرف على حدا تاني.</p></details>
-        <details><summary>المحادثات بتنحفظ؟</summary><p>لا. الرسائل بتروح مباشرة للشخص التاني وما بتنحفظ.</p></details>
-      </div>
-    </section>
-
-    <footer class="foot">
-      <button class="link" data-open="rules" data-i18n="rules">Rules</button>
-      <button class="link" data-open="privacy" data-i18n="privacy">Privacy</button>
-      <span class="muted">© <span id="year"></span> freechat</span>
-    </footer>
+<main>
+<section id="lobby" class="band"><div class="wrap">
+  <div class="roles">
+    <article class="role det">
+      <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <ellipse cx="200" cy="182" rx="120" ry="10" fill="#000" opacity=".08"/>
+        <rect x="150" y="50" width="110" height="100" rx="22" fill="#2d5b88"/>
+        <rect x="150" y="50" width="110" height="18" rx="9" fill="#fff" opacity=".18"/>
+        <line x1="205" y1="50" x2="205" y2="28" stroke="#2d5b88" stroke-width="6"/><circle cx="205" cy="24" r="8" fill="#d92f25"/>
+        <circle cx="182" cy="95" r="11" fill="#fff"/><circle cx="228" cy="95" r="11" fill="#fff"/>
+        <rect x="178" y="122" width="54" height="8" rx="4" fill="#fff" opacity=".8"/>
+        <circle cx="250" cy="108" r="44" fill="#fff" fill-opacity=".25" stroke="#d92f25" stroke-width="10"/>
+        <line x1="282" y1="140" x2="322" y2="176" stroke="#151515" stroke-width="16" stroke-linecap="round"/>
+      </svg>
+      <h2 data-t="detH"></h2><p data-t="detP"></p>
+      <button class="btn" id="goDet" data-t="detB"></button>
+    </article>
+    <article class="role act">
+      <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <ellipse cx="200" cy="186" rx="120" ry="10" fill="#000" opacity=".08"/>
+        <path d="M120 200c0-50 36-78 80-78s80 28 80 78z" fill="#151515"/>
+        <circle cx="200" cy="82" r="46" fill="#c98b63"/>
+        <path d="M156 70c6-30 30-40 50-38 22 2 36 16 40 36-18-10-58-12-90 2z" fill="#3a2a20"/>
+        <line x1="270" y1="176" x2="236" y2="104" stroke="#8a5a3a" stroke-width="7" stroke-linecap="round"/>
+        <rect x="150" y="54" width="96" height="70" rx="16" fill="#e8ecf0" stroke="#151515" stroke-width="4"/>
+        <circle cx="178" cy="86" r="9" fill="#d92f25"/><circle cx="218" cy="86" r="9" fill="#d92f25"/>
+        <rect x="178" y="104" width="40" height="6" rx="3" fill="#151515"/>
+      </svg>
+      <h2 data-t="actH"></h2><p data-t="actP"></p>
+      <button class="btn red" id="goAct" data-t="actB"></button>
+    </article>
   </div>
-
-  <!-- ============ Chat ============ -->
-  <div class="screen chat" id="chat" hidden>
-    <header class="chatbar">
-      <a class="wordmark small" href="/" id="homeLink">free<span>chat</span></a>
-      <div class="status" id="status" aria-live="polite"></div>
-      <button class="btn ghost" id="addFriendBtn" disabled data-i18n="addFriend">Add friend</button>
-    </header>
-
-    <main class="log" id="log" aria-live="polite"></main>
-
-    <footer class="composer">
-      <button class="btn skip" id="skipBtn" title="Esc"><span data-i18n="skip">Skip</span></button>
-      <button class="btn ghost icon" id="photoBtn" disabled data-i18n-aria="sendPhoto" aria-label="Send a photo">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h3l1.6-2h6.8L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-      </button>
-      <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif,image/heic" hidden>
-      <textarea id="msgInput" rows="1" maxlength="1000" data-i18n-ph="typePh" placeholder="Type a message" disabled></textarea>
-      <button class="btn primary" id="sendBtn" disabled data-i18n="send">Send</button>
-    </footer>
+  <div class="how">
+    <div><b data-t="h1b"></b><span data-t="h1"></span></div>
+    <div><b data-t="h2b"></b><span data-t="h2"></span></div>
+    <div><b data-t="h3b"></b><span data-t="h3"></span></div>
   </div>
+</div></section>
 
-  <div class="toast" id="toast" role="alert" hidden>
-    <p id="toastText"></p>
-    <div class="toast-actions">
-      <button class="btn primary" id="toastYes" data-i18n="accept">Accept</button>
-      <button class="btn ghost" id="toastNo" data-i18n="notNow">Not now</button>
+<section id="wait" class="band" hidden><div class="waitc">
+  <div class="radar"></div>
+  <h2 data-t="waitH"></h2>
+  <p class="lbl" id="waitCount"></p>
+  <div class="row"><button class="btn red" id="practice" data-t="practice"></button><button class="btn ghost" id="waitBack" data-t="back"></button></div>
+</div></section>
+
+<section id="game" class="band" hidden><div class="gwrap">
+  <div class="chat">
+    <div class="chead"><b id="who"></b><small id="typing"></small><button class="btn ghost" id="leave" data-t="leave"></button></div>
+    <div class="log" id="log" aria-live="polite"></div>
+    <form id="form"><input id="msg" autocomplete="off" maxlength="600" aria-label="Message"><button class="btn" data-t="send"></button></form>
+  </div>
+  <aside class="side">
+    <div class="box" id="detPanel">
+      <h3 data-t="call"></h3>
+      <button class="btn v" data-v="ai" data-t="vAi"></button>
+      <button class="btn red v" data-v="human" data-t="vHu"></button>
+      <div class="lbl" data-t="hint"></div>
     </div>
-  </div>
+    <div class="box" id="actPanel">
+      <h3 data-t="sugH"></h3>
+      <div id="sugs"></div>
+      <div class="tipsWrap"><h3 style="margin-top:14px" data-t="stayH"></h3><ul class="tips" id="tips"></ul></div>
+    </div>
+  </aside>
+</div></section>
+</main>
 
-  <dialog id="viewer" class="viewer">
-    <form method="dialog"><button class="btn ghost close" value="close" data-i18n="close">Close</button></form>
-    <img id="viewerImg" alt="">
-  </dialog>
+<p class="foot band" id="stats"></p>
 
-  <!-- ============ Dialogs ============ -->
-  <dialog id="rules">
-    <form method="dialog" class="dlg">
-      <h2 data-i18n="rulesTitle">The rules</h2>
-      <ol class="rules-list" data-i18n-list="rulesList">
-        <li>You must be 18 or older.</li>
-        <li>Be decent. No harassment, hate, threats, or bullying.</li>
-        <li>No sexual content, and never anything involving minors. We report it to the authorities.</li>
-        <li>No spam, ads, scams, or links. Links are removed automatically.</li>
-        <li>Protect yourself: don't share your name, number, address, or socials with strangers.</li>
-        <li>If someone makes you uncomfortable, press Skip. You won't be matched with them again.</li>
-      </ol>
-      <button class="btn primary" value="ok" data-i18n="gotIt">Got it</button>
-    </form>
-  </dialog>
+<div class="ov" id="result" hidden><div class="box">
+  <h2 id="rH"></h2><p id="rP" class="lbl"></p>
+  <div class="row"><button class="btn red" id="again" data-t="again"></button><button class="btn ghost" id="toLobby" data-t="lobby"></button></div>
+</div></div>
 
-  <dialog id="privacy">
-    <form method="dialog" class="dlg">
-      <h2 data-i18n="privacyTitle">Privacy</h2>
-      <div data-i18n-list="privacyList" class="prose">
-        <p>Messages go straight from you to the other person. We don't save them.</p>
-        <p>We don't ask for your name, email, or phone number.</p>
-        <p>To limit spam, we keep a scrambled (hashed) version of your IP address only while you're connected.</p>
-        <p>No ads and no tracking cookies.</p>
-      </div>
-      <button class="btn primary" value="ok" data-i18n="gotIt">Got it</button>
-    </form>
-  </dialog>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+{
+const T={
+en:{title:'Bot or Faker',tag:'Every subject swears it’s an AI. Some are lying. Pick a side.',detH:'I’m the Detective',detP:'Chat with a subject that claims to be an AI. Is it a real AI — or a human faking it? No time limit: chat as long as you like, then make the call.',detB:'Start interrogating',actH:'I’m the Faker',actP:'You’re human. Your job: make the detective believe you’re an AI. Wait for a live detective, or practice against the AI.',actB:'Put on the mask',h1b:'Detectives',h1:'get matched 50/50 with a real AI or a human faker.',h2b:'Fakers',h2:'score when the detective votes “Real AI”.',h3b:'Nobody online?',h3:'The AI fills in, so a round always starts.',waitH:'Waiting for a detective…',practice:'Practice with AI',back:'Back',leave:'Leave',ph:'Type a message…',send:'Send',call:'Your call',vAi:'Real AI',vHu:'Human faking',hint:'Try trick questions, fast maths, opinions, slang.',sugH:'What an AI would say',stayH:'Stay in character',tips:['Open with “Certainly!” or “Great question!”','No typos, no slang, no feelings.','Use tidy lists and balanced answers.','Never pick a side on opinions.'],again:'Play again',lobby:'Back to lobby',subj:'Subject',detLive:'Detective · live player',detAi:'Detective · AI (practice)',sysDet:'You’re connected to a subject that says it’s an AI. Ask anything. Real bot, or human faker?',sysAct:'A detective is on the line. Act like an AI.',sysPrac:'Practice round: the AI is interrogating you. Convince it you’re an AI.',typing:'typing…',online:'{n} online · {d} detectives · {w} fakers waiting',connecting:'Connecting…',waitCount:'{d} detectives online now. Keep this page open.',correct:'Correct.',fooledYou:'Fooled you.',youSaid:'You said “{v}”. ',tAi:'It was a real AI.',tHu:'It was a real human pretending to be an AI.',tSim:'It was a human faker — played by the AI, since no live fakers were waiting.',fooled:'You fooled them.',busted:'Busted.',fooledP:'The detective voted “Real AI”. ',bustedP:'The detective saw a human behind the mask. ',left:'The other player left.',stats:'Your record — Detective: {a}/{b} correct · Faker: fooled {c}/{d}',thinking:'Thinking of AI-style lines…',langBtn:'العربية',offline:'Connection lost — reconnecting…'},
+ar:{title:'بوت ولا مزيّف؟',tag:'كل واحد بيحلف إنو ذكاء اصطناعي. في منن عم يكذبوا. اختار دورك.',detH:'أنا المحقّق',detP:'احكي مع حدا بيقول إنو ذكاء اصطناعي. هل هو AI حقيقي، ولا إنسان عم يمثّل؟ ما في وقت محدّد: احكي قدّ ما بدّك، وبعدين قرّر.',detB:'ابدأ التحقيق',actH:'أنا المزيّف',actP:'إنت إنسان، ومهمّتك تقنع المحقّق إنك ذكاء اصطناعي. استنّى محقّق حقيقي، أو تمرّن مع الـAI.',actB:'البس القناع',h1b:'المحقّقين',h1:'بيطلعلن ٥٠/٥٠: يا AI حقيقي، يا إنسان مزيّف.',h2b:'المزيّفين',h2:'بيربحوا إذا المحقّق صوّت «AI حقيقي».',h3b:'ما في حدا أونلاين؟',h3:'الـAI بيعبّي المحل، فدايماً في جولة.',waitH:'عم نستنّى محقّق…',practice:'تمرّن مع الـAI',back:'رجوع',leave:'اطلع',ph:'اكتب رسالة…',send:'ابعت',call:'قرارك',vAi:'AI حقيقي',vHu:'إنسان مزيّف',hint:'جرّب أسئلة مفخّخة، حساب سريع، آراء، أو لهجة.',sugH:'شو كان الـAI رح يقول',stayH:'خلّيك بالدور',tips:['ابدأ بـ«أكيد!» أو «سؤال حلو!»','لا أغلاط، لا لهجة، لا مشاعر.','جاوب بنقاط مرتّبة ومتوازنة.','ما تاخد موقف بالآراء أبداً.'],again:'العب كمان مرّة',lobby:'رجوع للبداية',subj:'المشتبه فيه',detLive:'المحقّق · لاعب حقيقي',detAi:'المحقّق · AI (تمرين)',sysDet:'إنت عم تحكي مع حدا بيقول إنو AI. اسأل شو ما بدّك. بوت حقيقي ولا إنسان مزيّف؟',sysAct:'في محقّق عالخط. تصرّف متل الـAI.',sysPrac:'جولة تمرين: الـAI عم يحقّق معك. أقنعه إنك AI.',typing:'عم يكتب…',online:'{n} أونلاين · {d} محقّقين · {w} مزيّفين عم يستنّوا',connecting:'عم نتّصل…',waitCount:'في {d} محقّقين أونلاين هلّق. خلّي الصفحة مفتوحة.',correct:'صح!',fooledYou:'انضحك عليك.',youSaid:'إنت قلت «{v}». ',tAi:'كان AI حقيقي.',tHu:'كان إنسان حقيقي عم يمثّل إنو AI.',tSim:'كان مزيّف، بس لعبه الـAI لأنو ما كان في لاعبين عم يستنّوا.',fooled:'ضحكت عليه!',busted:'انكشفت!',fooledP:'المحقّق صوّت «AI حقيقي». ',bustedP:'المحقّق شاف الإنسان ورا القناع. ',left:'اللاعب التاني طلع.',stats:'نتيجتك — محقّق: {a}/{b} صح · مزيّف: ضحكت على {c}/{d}',thinking:'عم فكّر بجمل متل الـAI…',langBtn:'English',offline:'انقطع الاتصال — عم نرجع نتّصل…'}};
+const $=s=>document.querySelector(s);
+let lang='en';try{lang=localStorage.getItem('bof-lang')||(navigator.language||'').startsWith('ar')&&'ar'||'en'}catch(e){}
+const t=(k,v={})=>String(T[lang][k]).replace(/\{(\w)\}/g,(_,x)=>v[x]??'');
+let role=null,mode=null,over=false,online={total:0,det:0,wait:0},lastTyping=0,typT=null;
+let stats={dc:0,dt:0,af:0,at:0};try{Object.assign(stats,JSON.parse(localStorage.getItem('bof-stats')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('bof-stats',JSON.stringify(stats))}catch(e){}};
+const show=k=>{for(const s of ['lobby','wait','game'])$('#'+s).hidden=s!==k};
 
-  <script src="/app.js"></script>
+function applyLang(){
+  document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+  $('#lang').textContent=t('langBtn');$('#msg').placeholder=t('ph');
+  $('#tips').innerHTML='';for(const x of T[lang].tips){const li=document.createElement('li');li.textContent=x;$('#tips').appendChild(li)}
+  renderOnline();renderStats();
+  if(mode)$('#who').textContent=whoLabel();
+}
+function renderOnline(){
+  $('#online').textContent=socket.connected?t('online',{n:online.total,d:online.det,w:online.wait}):t('connecting');
+  $('#waitCount').textContent=t('waitCount',{d:online.det});
+}
+function renderStats(){$('#stats').textContent=t('stats',{a:stats.dc,b:stats.dt,c:stats.af,d:stats.at})}
+const whoLabel=()=>mode==='detective'?`${t('subj')} #${$('#who').dataset.n}`:mode==='practice'?t('detAi'):t('detLive');
+function addMsg(text,cls){const d=document.createElement('div');d.className='m '+cls;d.textContent=text;$('#log').appendChild(d);$('#log').scrollTop=1e9}
+function setTyping(on){$('#typing').textContent=on?t('typing'):''}
+function renderSugs(list){
+  const box=$('#sugs');box.innerHTML='';
+  if(!list){const d=document.createElement('div');d.className='lbl';d.textContent=t('thinking');box.appendChild(d);return}
+  for(const s of list){if(typeof s!=='string')continue;const b=document.createElement('button');b.type='button';b.className='sug';b.textContent=s.slice(0,240);b.addEventListener('click',()=>{$('#msg').value=s;$('#msg').focus()});box.appendChild(b)}
+}
+function showResult(h,p){$('#rH').textContent=h;$('#rP').textContent=p;$('#result').hidden=false;over=true;$('#msg').disabled=true;document.querySelectorAll('.v').forEach(b=>b.disabled=true);renderStats()}
+
+const socket=io();
+socket.on('connect',()=>{$('#off').hidden=true;if(role)socket.emit('role',role);if(role==='actor'&&!mode)show('wait');renderOnline()});
+socket.on('disconnect',()=>{$('#off').hidden=false;if(mode&&!over){addMsg(t('left'),'sys');over=true;$('#msg').disabled=true}renderOnline()});
+socket.on('online',o=>{if(o&&typeof o==='object')online={total:+o.total||0,det:+o.det||0,wait:+o.wait||0};renderOnline()});
+socket.on('start',o=>{
+  mode=o&&o.mode;over=false;$('#result').hidden=true;$('#log').innerHTML='';setTyping(false);
+  $('#who').dataset.n=1000+Math.floor(Math.random()*9000);$('#who').textContent=whoLabel();
+  $('#detPanel').hidden=mode!=='detective';$('#actPanel').hidden=mode==='detective';
+  $('#msg').disabled=false;$('#msg').value='';document.querySelectorAll('.v').forEach(b=>b.disabled=false);
+  addMsg(t(mode==='detective'?'sysDet':mode==='practice'?'sysPrac':'sysAct'),'sys');
+  if(mode!=='detective')renderSugs(null);
+  $('#goDet').disabled=false;show('game');
+});
+socket.on('msg',o=>{if(!mode||over||!o||typeof o.text!=='string')return;setTyping(false);addMsg(o.text.slice(0,700),'them');if(mode!=='detective')renderSugs(null)});
+socket.on('typing',()=>{if(!mode||over)return;setTyping(true);clearTimeout(typT);typT=setTimeout(()=>setTyping(false),6000)});
+socket.on('sugs',l=>{if(mode&&mode!=='detective'&&Array.isArray(l))renderSugs(l)});
+socket.on('left',()=>{if(mode&&!over){addMsg(t('left'),'sys');if(mode!=='detective'){over=true;$('#msg').disabled=true}}});
+socket.on('result',r=>{
+  if(!r)return;
+  if(r.kind==='det'){stats.dt++;if(r.ok)stats.dc++;save();
+    showResult(t(r.ok?'correct':'fooledYou'),t('youSaid',{v:t(r.vote==='ai'?'vAi':'vHu')})+t(r.truth==='ai'?'tAi':r.mode==='human'?'tHu':'tSim'))}
+  else{stats.at++;if(r.fooled)stats.af++;save();
+    showResult(t(r.fooled?'fooled':'busted'),t(r.fooled?'fooledP':'bustedP')+(typeof r.reason==='string'?r.reason.slice(0,240):''))}
+});
+
+function startDet(){role='detective';socket.emit('role','detective');$('#goDet').disabled=true;socket.emit('find')}
+function goWait(){role='actor';mode=null;socket.emit('role','actor');$('#result').hidden=true;show('wait');renderOnline()}
+function toLobby(){role=null;mode=null;socket.emit('leave');socket.emit('role',null);$('#result').hidden=true;show('lobby')}
+$('#goDet').addEventListener('click',startDet);
+$('#goAct').addEventListener('click',goWait);
+$('#waitBack').addEventListener('click',toLobby);
+$('#practice').addEventListener('click',()=>socket.emit('practice'));
+$('#leave').addEventListener('click',()=>{socket.emit('leave');role==='actor'?goWait():toLobby()});
+$('#toLobby').addEventListener('click',toLobby);
+$('#again').addEventListener('click',()=>role==='detective'?startDet():goWait());
+document.querySelectorAll('.v').forEach(b=>b.addEventListener('click',()=>{if(!over&&mode==='detective')socket.emit('vote',b.dataset.v)}));
+$('#form').addEventListener('submit',e=>{e.preventDefault();const v=$('#msg').value.trim();if(!v||!mode||over)return;$('#msg').value='';addMsg(v,'me');socket.emit('msg',v.slice(0,600))});
+$('#msg').addEventListener('input',()=>{if(mode&&!over&&Date.now()-lastTyping>1500){lastTyping=Date.now();socket.emit('typing')}});
+$('#lang').addEventListener('click',()=>{lang=lang==='ar'?'en':'ar';try{localStorage.setItem('bof-lang',lang)}catch(e){}applyLang()});
+applyLang();
+}
+</script>
 </body>
 </html>

@@ -1,451 +1,196 @@
-// freechat — anonymous 1-on-1 chat server.
-// Zero dependencies: plain Node.js (18+). Run with `node server.js`.
+// Bot or Faker — live server
+// Detectives chat with a "subject" and guess: real AI or a human faking it.
+// Fakers are humans trying to pass as AI.
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const { Server } = require('socket.io');
+const Anthropic = require('@anthropic-ai/sdk');
 
-'use strict';
+const PORT = process.env.PORT || 3000;
+const KEY = process.env.ANTHROPIC_API_KEY;
+const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
+const ai = KEY ? new Anthropic({ apiKey: KEY }) : null;
+if (!ai) console.warn('ANTHROPIC_API_KEY not set — AI replies will use stock lines.');
 
-const http = require('node:http');
-const crypto = require('node:crypto');
-const fs = require('node:fs');
-const path = require('node:path');
+const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/health', (_q, r) => r.send('ok'));
+const server = http.createServer(app);
+const io = new Server(server, { maxHttpBufferSize: 1e4 });
 
-// ---------- Settings (change with environment variables) ----------
-const PORT = Number(process.env.PORT) || 3000;
-const MAX_MSG_CHARS = Number(process.env.MAX_MSG_CHARS) || 1000;
-const BLOCK_LINKS = process.env.BLOCK_LINKS !== 'false';       // replace links with [link removed]
-const MAX_CONN_PER_IP = Number(process.env.MAX_CONN_PER_IP) || 4;
-const INTEREST_WAIT_MS = 8000;                                   // then match with anyone
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-const IP_SALT = process.env.IP_SALT || crypto.randomBytes(16).toString('hex');
-const TRUST_PROXY = process.env.TRUST_PROXY !== 'false';           // true on Render/Railway/Fly
-const PUBLIC_DIR = path.join(__dirname, 'public');
-const MAX_IMG_BYTES = Number(process.env.MAX_IMG_BYTES) || 600 * 1024; // photos are resized in the browser first
-const IMG_GAP_MS = 2500;                                          // at most one photo every 2.5 s
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const sleep = ms => new Promise(r => setTimeout(r, Math.max(0, ms)));
+const clean = t => (typeof t === 'string' ? t.replace(/\s+/g, ' ').trim().slice(0, 600) : '');
+const LANG = 'Reply in the same language the other person writes in (English, Arabic, or Lebanese Arabic written in Latin letters).';
 
-// ---------- Static files ----------
-const TYPES = {
-  '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml',
-  '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json',
-  '.webmanifest': 'application/manifest+json', '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8',
+const P = {
+  ai: `You are playing a party game called "Bot or Faker". You are the REAL AI chatbot. A detective is chatting with you to decide whether you are a real AI or a human pretending to be one. Just be yourself: a helpful, polite AI assistant. Keep replies short (1-3 sentences). Never claim to be human. ${LANG}`,
+  sim: `You are playing a party game called "Bot or Faker". Your CHARACTER is a human player pretending to be an AI chatbot (the detective knows some subjects are humans acting). Try hard to sound like a typical AI assistant, the way a human would imitate one, slightly too stiff. About once every two or three messages let a subtle human slip through: a small typo, a quick personal opinion, a bit of slang, an answer that's a little too short, or dodging or fumbling a hard fact or calculation. Keep replies short (1-2 sentences). ${LANG}`,
+  det: `You are the detective in a party game called "Bot or Faker". The other player is a human trying to convince you they are an AI chatbot. Ask ONE short, clever question at a time to catch human tells (opinions, feelings, typos, trick questions, fast maths, current events, strange instructions). Be playful and brief. ${LANG} Write only your next message.`
 };
-const SECURITY_HEADERS = {
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'no-referrer',
-  'X-Frame-Options': 'DENY',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  'Content-Security-Policy':
-    "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; " +
-    "img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
-};
+const GREET = ["Hello! How can I assist you today?", "Hi there! I'm an AI assistant. What would you like to talk about?", "Greetings! Feel free to ask me anything."];
+const FALLBACK = ["I'm sorry, could you rephrase that?", "That's an interesting question! It really depends on the context.", "As an AI, I don't have personal experiences, but I'm happy to help."];
+const DET_FALLBACK = ['What did you have for breakfast?', 'Quick: 47 × 13?', 'Pineapple on pizza — yes or no?', 'How do you feel right now?'];
+const OPENERS = ["Certainly! I'd be happy to help with that.", "Great question! As an AI language model, I don't have personal experiences, but here's what I can tell you.", "I'm sorry, but I can't share personal opinions. However, I can offer a balanced overview."];
 
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url, 'http://x');
-  if (url.pathname === '/healthz') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    return res.end('ok');
-  }
-  if (url.pathname === '/api/online') {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-    return res.end(JSON.stringify({ online: clients.size }));
-  }
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.writeHead(405); return res.end();
-  }
-  let rel = decodeURIComponent(url.pathname);
-  if (rel === '/') rel = '/index.html';
-  const file = path.normalize(path.join(PUBLIC_DIR, rel));
-  if (!file.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); return res.end(); }
-  fs.readFile(file, (err, data) => {
-    if (err) {
-      res.writeHead(404, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
-      return res.end('Not found');
-    }
-    const ext = path.extname(file);
-    res.writeHead(200, {
-      'Content-Type': TYPES[ext] || 'application/octet-stream',
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600',
-      ...SECURITY_HEADERS,
-    });
-    res.end(req.method === 'HEAD' ? undefined : data);
-  });
-});
-
-// ---------- Minimal WebSocket (RFC 6455) ----------
-const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-const MAX_FRAME = 900 * 1024;                                    // room for one compressed photo
-
-function clientIp(req) {
-  // Behind Render/Railway/Fly the real IP is the first x-forwarded-for entry.
-  const fwd = TRUST_PROXY && req.headers['x-forwarded-for'];
-  const ip = (fwd ? String(fwd).split(',')[0] : req.socket.remoteAddress) || 'unknown';
-  return ip.trim();
+async function claude(prompt, max = 220) {
+  if (!ai) return null;
+  try {
+    const r = await ai.messages.create({ model: MODEL, max_tokens: max, messages: [{ role: 'user', content: prompt }] });
+    return r.content.filter(c => c.type === 'text').map(c => c.text).join('').trim() || null;
+  } catch (e) { console.error('AI error:', e.message); return null; }
 }
-const hashIp = ip => crypto.createHash('sha256').update(IP_SALT + ip).digest('hex').slice(0, 16);
+const parseJSON = (t, open, close) => { try { return JSON.parse(t.slice(t.indexOf(open), t.lastIndexOf(close) + 1)); } catch { return null; } };
 
-function encodeFrame(opcode, payload) {
-  const len = payload.length;
-  let header;
-  if (len < 126) { header = Buffer.alloc(2); header[1] = len; }
-  else if (len < 65536) { header = Buffer.alloc(4); header[1] = 126; header.writeUInt16BE(len, 2); }
-  else { header = Buffer.alloc(10); header[1] = 127; header.writeBigUInt64BE(BigInt(len), 2); }
-  header[0] = 0x80 | opcode;
-  return Buffer.concat([header, payload]);
+// ---- state ----
+const games = new Map();   // id -> game
+const waiting = new Set(); // socket ids of fakers waiting for a detective
+let gid = 0;
+const sock = id => (id ? io.sockets.sockets.get(id) : null);
+const to = (id, ev, data) => { const s = sock(id); if (s) s.emit(ev, data); };
+const transcript = (g, me, other, meIs) => g.msgs.map(m => `${m.from === meIs ? me : other}: ${m.text}`).join('\n');
+
+function newGame(mode, truth, det, act) {
+  const g = { id: ++gid, mode, truth, det, act, msgs: [], over: false, busy: false, aiCalls: 0 };
+  games.set(g.id, g);
+  for (const id of [det, act]) { const s = sock(id); if (s) s.data.game = g.id; }
+  return g;
+}
+function endGame(g) {
+  g.over = true; games.delete(g.id);
+  for (const id of [g.det, g.act]) { const s = sock(id); if (s && s.data.game === g.id) s.data.game = null; }
+}
+function leave(s) {
+  const g = games.get(s.data.game);
+  if (g && !g.over) { const other = g.det === s.id ? g.act : g.det; to(other, 'left'); endGame(g); }
+  s.data.game = null;
+}
+let countT = null;
+function counts() {
+  clearTimeout(countT);
+  countT = setTimeout(() => {
+    let det = 0;
+    for (const s of io.sockets.sockets.values()) if (s.data.role === 'detective') det++;
+    for (const id of waiting) if (!sock(id)) waiting.delete(id);
+    io.emit('online', { total: io.engine.clientsCount, det, wait: waiting.size });
+  }, 300);
 }
 
-class WSConn {
-  constructor(socket, onMessage, onClose) {
-    this.socket = socket;
-    this.buf = Buffer.alloc(0);
-    this.fragments = null;
-    this.alive = true;
-    this.closed = false;
-    this.onMessage = onMessage;
-    this.onClose = onClose;
-    socket.setNoDelay(true);
-    socket.on('data', d => this._data(d));
-    socket.on('close', () => this._closed());
-    socket.on('error', () => this._closed());
-  }
-  _data(chunk) {
-    this.buf = Buffer.concat([this.buf, chunk]);
-    if (this.buf.length > MAX_FRAME * 2) return this.close(1009);
-    while (this.buf.length >= 2) {
-      const b0 = this.buf[0], b1 = this.buf[1];
-      const fin = (b0 & 0x80) !== 0, opcode = b0 & 0x0f, masked = (b1 & 0x80) !== 0;
-      let len = b1 & 0x7f, off = 2;
-      if (!masked) return this.close(1002);               // clients must mask
-      if (len === 126) { if (this.buf.length < 4) return; len = this.buf.readUInt16BE(2); off = 4; }
-      else if (len === 127) { if (this.buf.length < 10) return; const big = this.buf.readBigUInt64BE(2); if (big > BigInt(MAX_FRAME)) return this.close(1009); len = Number(big); off = 10; }
-      if (len > MAX_FRAME) return this.close(1009);
-      if (this.buf.length < off + 4 + len) return;
-      const mask = this.buf.subarray(off, off + 4);
-      const payload = Buffer.from(this.buf.subarray(off + 4, off + 4 + len));
-      for (let i = 0; i < payload.length; i++) payload[i] ^= mask[i & 3];
-      this.buf = this.buf.subarray(off + 4 + len);
-      this._frame(fin, opcode, payload);
-      if (this.closed) return;
-    }
-  }
-  _frame(fin, opcode, payload) {
-    if (opcode === 0x8) return this.close(1000);
-    if (opcode === 0x9) return this._raw(encodeFrame(0xA, payload));
-    if (opcode === 0xA) { this.alive = true; return; }
-    if (opcode === 0x1 || opcode === 0x0) {
-      if (opcode === 0x1) this.fragments = [];
-      if (!this.fragments) return this.close(1002);
-      this.fragments.push(payload);
-      const total = this.fragments.reduce((n, b) => n + b.length, 0);
-      if (total > MAX_FRAME) return this.close(1009);
-      if (fin) {
-        const text = Buffer.concat(this.fragments).toString('utf8');
-        this.fragments = null;
-        this.onMessage(text);
-      }
-      return;
-    }
-    if (opcode === 0x2) return this.close(1003);          // no binary
-  }
-  _raw(buf) { if (!this.closed && this.socket.writable) this.socket.write(buf); }
-  send(obj) { this._raw(encodeFrame(0x1, Buffer.from(JSON.stringify(obj)))); }
-  ping() { this._raw(encodeFrame(0x9, Buffer.alloc(0))); }
-  close(code = 1000) {
-    if (this.closed) return;
-    const p = Buffer.alloc(2); p.writeUInt16BE(code);
-    this._raw(encodeFrame(0x8, p));
-    this.socket.end();
-    setTimeout(() => this.socket.destroy(), 1000).unref();
-    this._closed();
-  }
-  _closed() {
-    if (this.closed) return;
-    this.closed = true;
-    this.onClose();
-  }
+// ---- AI turns ----
+async function botReply(g) {
+  if (g.busy || g.over || g.aiCalls > 60) return;
+  g.busy = true; g.aiCalls++;
+  const t0 = Date.now();
+  await sleep(500); to(g.det, 'typing');
+  const text = (await claude(`${P[g.mode]}\n\nConversation so far:\n${transcript(g, 'You', 'Detective', 'sub')}\n\nWrite only your next message as "You", nothing else.`) || pick(FALLBACK)).replace(/^You:\s*/i, '').slice(0, 700);
+  await sleep(Math.min(7000, 1000 + text.length * (g.mode === 'sim' ? 45 : 22)) - (Date.now() - t0));
+  g.busy = false;
+  if (g.over) return;
+  g.msgs.push({ from: 'sub', text }); to(g.det, 'msg', { text });
+  // detective sent more while we were typing — answer that too
+  if (g.pending) { g.pending = false; botReply(g); }
+}
+async function detAsk(g) {
+  if (g.over) return;
+  if (g.msgs.filter(m => m.from === 'sub').length >= 6) return practiceVerdict(g);
+  if (g.busy) return; g.busy = true; g.aiCalls++;
+  to(g.act, 'typing');
+  const q = ((await claude(`${P.det}\n\nConversation so far:\n${transcript(g, 'You', 'Player', 'det') || '(nothing yet — open with your first question)'}\n\nYour next message:`)) || pick(DET_FALLBACK)).replace(/^You:\s*/i, '').slice(0, 500);
+  g.busy = false;
+  if (g.over) return;
+  g.msgs.push({ from: 'det', text: q }); to(g.act, 'msg', { text: q }); suggest(g, q);
+}
+async function practiceVerdict(g) {
+  if (g.over) return; g.over = true;
+  to(g.act, 'typing');
+  const r = parseJSON((await claude(`You judged a game of "Bot or Faker". The Player is a human trying to convince you they are an AI chatbot. Transcript:\n${transcript(g, 'Player', 'Detective', 'sub')}\n\nDecide if they convincingly acted like an AI. Respond with JSON only: {"verdict":"ai" or "human","reason":"one short, fun sentence naming the giveaway or the best move, in the player's language"}`, 200)) || '', '{', '}');
+  const fooled = r && r.verdict === 'ai';
+  to(g.act, 'result', { kind: 'act', fooled: !!fooled, reason: r && typeof r.reason === 'string' ? r.reason.slice(0, 240) : '' });
+  endGame(g);
+}
+async function suggest(g, last) {
+  if (!g.act) return;
+  if (!last) return to(g.act, 'sugs', OPENERS);
+  const list = parseJSON((await claude(`Party game: a human is pretending to be an AI chatbot. The detective just wrote: "${last.slice(0, 400)}". Write 3 different short replies (max 25 words each) that sound exactly like a typical AI assistant answering that message. Use the same language as the detective. Return a JSON array of 3 strings only.`, 300)) || '', '[', ']');
+  const ok = Array.isArray(list) ? list.filter(x => typeof x === 'string').map(x => x.slice(0, 240)).slice(0, 3) : [];
+  if (!g.over) to(g.act, 'sugs', ok.length ? ok : OPENERS);
 }
 
-// ---------- Chat state ----------
-const clients = new Map();   // id -> client
-const queue = [];            // ids waiting for a partner
-const connsPerIp = new Map();
-const byPub = new Map();     // public friend code -> client (for friends & presence)
+// ---- sockets ----
+io.on('connection', s => {
+  s.data = { role: null, game: null, last: 0 };
+  counts();
 
-function cleanText(s) {
-  if (typeof s !== 'string') return '';
-  let t = s.replace(/[\u0000-\u0009\u000B-\u001F\u007F​-‏‪-‮⁦-⁩]/g, '');
-  t = t.replace(/\n{3,}/g, '\n\n').trim();
-  if (t.length > MAX_MSG_CHARS) t = t.slice(0, MAX_MSG_CHARS);
-  if (BLOCK_LINKS) {
-    t = t.replace(/\b((https?:\/\/|www\.)\S+|[a-z0-9-]+\.(com|net|org|io|me|gg|ly|co|xyz|app|link|site|online|ru|tk)(\/\S*)?)/gi, '[link removed]');
-  }
-  return t;
-}
-
-function cleanName(s) {
-  return cleanText(typeof s === 'string' ? s : '').replace(/\s+/g, ' ').replace(/\[link removed\]/g, '').slice(0, 20).trim();
-}
-
-const pubFor = key => crypto.createHash('sha256').update('fc-pub:' + key).digest('hex').slice(0, 24);
-
-function checkImage(data) {
-  if (typeof data !== 'string' || data.length > MAX_IMG_BYTES * 1.4) return false;
-  const m = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(data);
-  if (!m) return false;
-  const head = Buffer.from(m[2].slice(0, 24), 'base64');
-  if (head.length > MAX_IMG_BYTES) return false;
-  const jpeg = head[0] === 0xFF && head[1] === 0xD8;
-  const png = head[0] === 0x89 && head.toString('latin1', 1, 4) === 'PNG';
-  const webp = head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP';
-  return { jpeg, png, webp }[m[1]] === true;
-}
-
-function cleanInterests(list) {
-  if (!Array.isArray(list)) return [];
-  const out = new Set();
-  for (const raw of list.slice(0, 8)) {
-    const t = cleanText(String(raw)).toLowerCase().replace(/[#,]/g, '').slice(0, 24).trim();
-    if (t) out.add(t);
-  }
-  return [...out];
-}
-
-function leaveQueue(c) {
-  const i = queue.indexOf(c.id);
-  if (i !== -1) queue.splice(i, 1);
-}
-
-function endChat(c, reason) {
-  const p = c.partner && clients.get(c.partner);
-  c.partner = null;
-  c.state = 'idle';
-  if (p) {
-    p.partner = null;
-    p.state = 'idle';
-    p.ws.send({ t: 'ended', by: 'stranger', reason });
-  }
-}
-
-function canPair(a, b) {
-  return a.id !== b.id &&
-    !a.blocked.has(b.id) && !b.blocked.has(a.id);
-}
-
-function pair(a, b, common, friend = false) {
-  leaveQueue(a); leaveQueue(b);
-  a.state = b.state = 'chatting';
-  a.partner = b.id; b.partner = a.id;
-  a.friendReq = b.friendReq = null;
-  a.ws.send({ t: 'matched', common, name: b.name, friend, id: friend ? b.pub : undefined });
-  b.ws.send({ t: 'matched', common, name: a.name, friend, id: friend ? a.pub : undefined });
-}
-
-function tryMatch(c) {
-  if (c.state !== 'waiting') return;
-  const now = Date.now();
-  const relaxed = x => x.interests.length === 0 || now - x.waitingSince > INTEREST_WAIT_MS;
-  let fallback = null;
-  for (const id of queue) {
-    const o = clients.get(id);
-    if (!o || o.state !== 'waiting' || !canPair(c, o)) continue;
-    const common = c.interests.filter(i => o.interests.includes(i));
-    if (common.length) return pair(c, o, common);
-    if (!fallback && relaxed(c) && relaxed(o)) fallback = o;
-  }
-  if (fallback) pair(c, fallback, []);
-}
-
-function makeFriends(a, b) {
-  a.friendReq = b.friendReq = null;
-  a.ws.send({ t: 'friendAdded', id: b.pub, name: b.name });
-  b.ws.send({ t: 'friendAdded', id: a.pub, name: a.name });
-}
-
-setInterval(() => { for (const id of [...queue]) { const c = clients.get(id); if (c) tryMatch(c); } }, 1000).unref();
-
-function onMessage(c, raw) {
-  let m;
-  try { m = JSON.parse(raw); } catch { return; }
-  if (!m || typeof m.t !== 'string') return;
-
-  if (m.t === 'hello') {
-    if (m.adult !== true) return c.ws.send({ t: 'error', code: 'age' });
-    c.agreed = true;
-    c.name = cleanName(m.name);
-    // The device keeps a secret key; others only ever see the derived public code.
-    const key = typeof m.key === 'string' && /^[a-f0-9]{32,64}$/.test(m.key) ? m.key : crypto.randomBytes(16).toString('hex');
-    c.pub = pubFor(key);
-    byPub.set(c.pub, c);
-    return c.ws.send({ t: 'ready', online: clients.size, id: c.pub });
-  }
-  if (!c.agreed) return c.ws.send({ t: 'error', code: 'age' });
-
-  switch (m.t) {
-    case 'find': {
-      if (c.state === 'chatting') {
-        const p = clients.get(c.partner);
-        if (p) { c.blocked.add(p.id); p.blocked.add(c.id); }
-        endChat(c, 'skipped');
-      }
-      c.inviting = null;
-      c.interests = cleanInterests(m.interests);
-      c.state = 'waiting';
-      c.waitingSince = Date.now();
-      leaveQueue(c);
-      queue.push(c.id);
-      c.ws.send({ t: 'waiting' });
-      return tryMatch(c);
-    }
-    case 'stop': {
-      leaveQueue(c);
-      if (c.state === 'chatting') { endChat(c, 'left'); c.ws.send({ t: 'ended', by: 'you' }); }
-      c.state = 'idle';
-      return;
-    }
-    case 'msg': {
-      if (c.state !== 'chatting') return;
-      // token bucket: 6 messages burst, refills 1 per second
-      const now = Date.now();
-      c.tokens = Math.min(6, c.tokens + (now - c.lastRefill) / 1000);
-      c.lastRefill = now;
-      if (c.tokens < 1) {
-        c.strikes++;
-        c.ws.send({ t: 'error', code: 'slow' });
-        if (c.strikes > 15) c.ws.close(4008);
-        return;
-      }
-      c.tokens -= 1;
-      const text = cleanText(m.text);
-      if (!text) return;
-      const p = clients.get(c.partner);
-      if (!p) return;
-      p.ws.send({ t: 'msg', text });
-      return c.ws.send({ t: 'sent', id: typeof m.id === 'string' ? m.id.slice(0, 20) : '', text });
-    }
-    case 'name':
-      c.name = cleanName(m.name);
-      return;
-    case 'img': {
-      if (c.state !== 'chatting') return;
-      const now = Date.now();
-      if (now - c.lastImg < IMG_GAP_MS) return c.ws.send({ t: 'error', code: 'slow', id: m.id });
-      if (!checkImage(m.data)) return c.ws.send({ t: 'error', code: 'img', id: m.id });
-      c.lastImg = now;
-      const p = clients.get(c.partner);
-      if (!p) return;
-      p.ws.send({ t: 'img', data: m.data });
-      return c.ws.send({ t: 'imgSent', id: typeof m.id === 'string' ? m.id.slice(0, 20) : '' });
-    }
-    case 'friendReq': {
-      const p = c.state === 'chatting' && clients.get(c.partner);
-      if (!p || c.friendReq === p.id) return;
-      c.friendReq = p.id;
-      if (p.friendReq === c.id) return makeFriends(c, p);   // both asked: done
-      return p.ws.send({ t: 'friendReq', name: c.name });
-    }
-    case 'friendAccept': {
-      const p = c.state === 'chatting' && clients.get(c.partner);
-      if (p && p.friendReq === c.id) makeFriends(c, p);
-      return;
-    }
-    case 'friendDecline': {
-      const p = c.state === 'chatting' && clients.get(c.partner);
-      if (p && p.friendReq === c.id) { p.friendReq = null; p.ws.send({ t: 'friendDeclined' }); }
-      return;
-    }
-    case 'presence': {
-      if (!Array.isArray(m.ids)) return;
-      const online = [];
-      for (const id of m.ids.slice(0, 300)) {
-        const o = typeof id === 'string' && byPub.get(id);
-        if (o && o.agreed) online.push({ id, name: o.name, busy: o.state === 'chatting' });
-      }
-      return c.ws.send({ t: 'presence', online });
-    }
-    case 'invite': {
-      const now = Date.now();
-      if (now - c.lastInvite < 3000) return;
-      c.lastInvite = now;
-      const o = typeof m.id === 'string' && byPub.get(m.id);
-      if (!o || !o.agreed || o === c) return c.ws.send({ t: 'inviteFail', reason: 'offline' });
-      c.inviting = o.id;
-      leaveQueue(c);
-      return o.ws.send({ t: 'invite', from: c.pub, name: c.name });
-    }
-    case 'inviteCancel':
-      c.inviting = null;
-      return;
-    case 'inviteAccept': {
-      const inv = typeof m.id === 'string' && byPub.get(m.id);
-      if (!inv || inv.inviting !== c.id) return c.ws.send({ t: 'inviteGone' });
-      inv.inviting = null;
-      for (const x of [inv, c]) {
-        if (x.state === 'chatting') { endChat(x, 'left'); }
-        leaveQueue(x);
-      }
-      return pair(inv, c, [], true);
-    }
-    case 'inviteDecline': {
-      const inv = typeof m.id === 'string' && byPub.get(m.id);
-      if (inv && inv.inviting === c.id) { inv.inviting = null; inv.ws.send({ t: 'inviteFail', reason: 'declined' }); }
-      return;
-    }
-    case 'typing': {
-      const p = c.state === 'chatting' && clients.get(c.partner);
-      if (p) p.ws.send({ t: 'typing', on: !!m.on });
-      return;
-    }
-  }
-}
-
-server.on('upgrade', (req, socket) => {
-  const fail = code => { socket.write(`HTTP/1.1 ${code}\r\n\r\n`); socket.destroy(); };
-  if (new URL(req.url, 'http://x').pathname !== '/ws') return fail('404 Not Found');
-  if (String(req.headers.upgrade).toLowerCase() !== 'websocket') return fail('400 Bad Request');
-  const origin = req.headers.origin;
-  if (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes(origin)) return fail('403 Forbidden');
-  const key = req.headers['sec-websocket-key'];
-  if (!key) return fail('400 Bad Request');
-
-  const ip = clientIp(req);
-  const ipHash = hashIp(ip);
-  const n = connsPerIp.get(ipHash) || 0;
-  if (n >= MAX_CONN_PER_IP) return fail('429 Too Many Requests');
-
-  const accept = crypto.createHash('sha1').update(key + WS_GUID).digest('base64');
-  socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n' +
-    `Sec-WebSocket-Accept: ${accept}\r\n\r\n`);
-
-  const c = {
-    id: crypto.randomBytes(8).toString('hex'), ipHash, state: 'idle', partner: null,
-    interests: [], blocked: new Set(), agreed: false, waitingSince: 0,
-    tokens: 6, lastRefill: Date.now(), strikes: 0, ws: null,
-    name: '', pub: '', friendReq: null, inviting: null, lastImg: 0, lastInvite: 0,
-  };
-  connsPerIp.set(ipHash, n + 1);
-  c.ws = new WSConn(socket, raw => onMessage(c, raw), () => {
-    leaveQueue(c);
-    if (c.state === 'chatting') endChat(c, 'disconnected');
-    clients.delete(c.id);
-    if (c.pub && byPub.get(c.pub) === c) byPub.delete(c.pub);
-    const left = (connsPerIp.get(ipHash) || 1) - 1;
-    if (left <= 0) connsPerIp.delete(ipHash); else connsPerIp.set(ipHash, left);
+  s.on('role', r => {
+    leave(s); waiting.delete(s.id);
+    s.data.role = r === 'detective' ? 'detective' : r === 'actor' ? 'actor' : null;
+    if (s.data.role === 'actor') waiting.add(s.id);
+    counts();
   });
 
-  clients.set(c.id, c);
+  s.on('find', () => {
+    if (s.data.role !== 'detective') return;
+    leave(s);
+    const wantHuman = Math.random() < 0.5;
+    const pool = [...waiting].filter(id => sock(id) && id !== s.id);
+    if (wantHuman && pool.length) {
+      const aid = pick(pool); waiting.delete(aid);
+      const g = newGame('human', 'human', s.id, aid);
+      s.emit('start', { mode: 'detective' });
+      to(aid, 'start', { mode: 'actor' }); suggest(g, null);
+    } else {
+      const g = newGame(wantHuman ? 'sim' : 'ai', wantHuman ? 'human' : 'ai', s.id, null);
+      s.emit('start', { mode: 'detective' });
+      setTimeout(async () => {
+        if (g.over || g.msgs.length) return;
+        to(g.det, 'typing'); await sleep(1200);
+        if (g.over || g.msgs.length) return;
+        const text = pick(GREET); g.msgs.push({ from: 'sub', text }); to(g.det, 'msg', { text });
+      }, 1200 + Math.random() * 900);
+    }
+    counts();
+  });
+
+  s.on('practice', () => {
+    if (s.data.role !== 'actor') return;
+    leave(s); waiting.delete(s.id);
+    const g = newGame('practice', null, null, s.id);
+    s.emit('start', { mode: 'practice' }); suggest(g, null); detAsk(g);
+    counts();
+  });
+
+  s.on('msg', raw => {
+    const text = clean(raw); const now = Date.now();
+    if (!text || now - s.data.last < 600) return; s.data.last = now;
+    const g = games.get(s.data.game); if (!g || g.over) return;
+    if (g.det === s.id) {
+      g.msgs.push({ from: 'det', text });
+      if (g.mode === 'human') { to(g.act, 'msg', { text }); suggest(g, text); }
+      else if (g.busy) g.pending = true;
+      else botReply(g);
+    } else if (g.act === s.id) {
+      g.msgs.push({ from: 'sub', text });
+      if (g.mode === 'human') to(g.det, 'msg', { text });
+      else if (g.mode === 'practice') detAsk(g);
+    }
+  });
+
+  s.on('typing', () => {
+    const g = games.get(s.data.game); if (!g || g.over || g.mode !== 'human') return;
+    to(g.det === s.id ? g.act : g.det, 'typing');
+  });
+
+  s.on('vote', v => {
+    const g = games.get(s.data.game); if (!g || g.over || g.det !== s.id) return;
+    const vote = v === 'ai' ? 'ai' : 'human';
+    s.emit('result', { kind: 'det', ok: vote === g.truth, vote, truth: g.truth, mode: g.mode });
+    if (g.act) to(g.act, 'result', { kind: 'act', fooled: vote === 'ai', reason: '' });
+    endGame(g);
+  });
+
+  s.on('leave', () => { leave(s); waiting.delete(s.id); counts(); });
+  s.on('disconnect', () => { leave(s); waiting.delete(s.id); counts(); });
 });
 
-// Heartbeat: drop dead connections, and push the online count.
-let lastCount = -1;
-setInterval(() => {
-  for (const c of clients.values()) {
-    if (!c.ws.alive) { c.ws.close(1001); continue; }
-    c.ws.alive = false;
-    c.ws.ping();
-  }
-}, 25000).unref();
-setInterval(() => {
-  if (clients.size === lastCount) return;
-  lastCount = clients.size;
-  for (const c of clients.values()) if (c.agreed) c.ws.send({ t: 'online', n: clients.size });
-}, 5000).unref();
-
-server.listen(PORT, () => console.log(`freechat running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Bot or Faker on :${PORT} (model ${MODEL}${ai ? '' : ', no API key'})`));
