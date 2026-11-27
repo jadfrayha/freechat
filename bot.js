@@ -190,3 +190,17 @@ function verdict(history) {
 
 const greet = () => pick(AI.en.greet);
 module.exports = { answer, suggestions, nextQuestion, verdict, greet, lang };
+
+// Replies the bot uses when the detective sends a photo or a dare
+const PHOTO = {
+  en: ["Thank you for sharing the image! As an AI, I'm not able to view photos here, but I'd be happy to talk about it.", "I appreciate you sending that. Unfortunately I can't see images in this chat. Could you describe it?"],
+  lb: ["Merci 3al sura! Ka AI ma fiyye shouf l sowar hon, bas fiyye e7ke 3anna.", "Merci! Ma fiyye shouf sowar b hal chat. Fik twassefle yeha?"],
+  ar: ["شكراً لمشاركة الصورة! بصفتي ذكاءً اصطناعياً، لا يمكنني رؤية الصور هنا.", "أقدّر إرسالك لها، لكن لا يمكنني رؤية الصور في هذه المحادثة. هل يمكنك وصفها؟"],
+};
+const DARE = {
+  en: ["As an AI, I don't have hands, so I'm unable to complete that request.", "I'm sorry, but I don't have a physical body, so I can't send a photo of my hand."],
+  lb: ["Ka AI ma 3ende ideyn, fa ma fiyye 3mol hal talab.", "Sorry, ma 3ende jesem, fa ma fiyye eb3at surit idi."],
+  ar: ["بصفتي ذكاءً اصطناعياً، ليست لدي يدان، لذلك لا يمكنني تنفيذ هذا الطلب.", "عذراً، ليس لدي جسد، لذلك لا يمكنني إرسال صورة ليدي."],
+};
+module.exports.photoReply = L => pick(PHOTO[L] || PHOTO.en);
+module.exports.dareRefuse = L => pick(DARE[L] || DARE.en);

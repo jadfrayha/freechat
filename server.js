@@ -14,7 +14,7 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (_q, r) => r.send('ok'));
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e4 });
+const io = new Server(server, { maxHttpBufferSize: 6e5 });
 
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const sleep = ms => new Promise(r => setTimeout(r, Math.max(0, ms)));
@@ -37,11 +37,33 @@ function endGame(g) {
   g.over = true; games.delete(g.id);
   for (const id of [g.det, g.act]) { const s = sock(id); if (s && s.data.game === g.id) s.data.game = null; }
 }
+// ---- missions & points ----
+// The faker gets one secret mission per human round; it is checked automatically.
+const MISSIONS = [
+  { k: 'word', w: 'banana' }, { k: 'word', w: 'pizza' }, { k: 'word', w: 'yalla' }, { k: 'word', w: 'habibi' },
+  { k: 'word', w: 'coffee' }, { k: 'word', w: 'robot' }, { k: 'laugh' }, { k: 'math' }, { k: 'askHuman' },
+  { k: 'photo', room: true },
+];
+const pickMission = inRoom => ({ ...pick(MISSIONS.filter(m => inRoom || !m.room)), done: false });
+function missionHit(m, text, isPhoto) {
+  if (!m || m.done) return false;
+  if (m.k === 'word') return new RegExp('(^|[^a-z])' + m.w + '([^a-z]|$)', 'i').test(text);
+  if (m.k === 'laugh') return /(ha){2,}|\blol\b|lmao|hhh|😂|🤣|ههه/i.test(text);
+  if (m.k === 'math') return /\d\s*[-+*/×x÷]\s*\d/.test(text);
+  if (m.k === 'askHuman') return /human|real person|insen|ensen|bashar|انسان|إنسان|بشر|are (you|u) (a |an )?(bot|ai|robot)/i.test(text);
+  if (m.k === 'photo') return !!isPhoto;
+  return false;
+}
+function checkMission(g, text, isPhoto) {
+  if (g.mode === 'human' && missionHit(g.mission, text, isPhoto)) { g.mission.done = true; to(g.act, 'missionDone'); }
+}
+const isJpeg = d => typeof d === 'string' && d.length < 500000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(d);
+
 // ---- friend rooms ----
 // A room holds two friends. Each round one is the detective and one the faker;
 // a coin flip decides if the faker types (human) or the bot answers for them (roombot).
 // Roles swap every round.
-const rooms = new Map(); // code -> { code, players: [id,id], det, round, ready:Set }
+const rooms = new Map(); // code -> { code, players: [id,id], det, round, ready:Set, score:{id:n} }
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function newCode() { let c; do { c = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join(''); } while (rooms.has(c)); return c; }
 function roomRound(r) {
@@ -53,7 +75,7 @@ function roomRound(r) {
   g.room = r.code;
   to(r.det, 'start', { mode: 'detective', room: r.code, round: r.round });
   to(act, 'start', { mode: human ? 'actor' : 'watch', room: r.code, round: r.round });
-  if (human) suggest(g, null);
+  if (human) { g.mission = pickMission(true); to(act, 'mission', g.mission); suggest(g, null); }
 }
 function closeRoom(s) {
   const r = rooms.get(s.data.room); s.data.room = null;
@@ -135,6 +157,7 @@ io.on('connection', s => {
       const g = newGame('human', 'human', s.id, aid);
       s.emit('start', { mode: 'detective' });
       to(aid, 'start', { mode: 'actor' }); suggest(g, null);
+      g.mission = pickMission(false); to(aid, 'mission', g.mission);
     } else {
       const g = newGame(wantHuman ? 'sim' : 'ai', wantHuman ? 'human' : 'ai', s.id, null);
       s.emit('start', { mode: 'detective' });
@@ -151,7 +174,7 @@ io.on('connection', s => {
   s.on('createRoom', () => {
     leave(s); closeRoom(s); waiting.delete(s.id); s.data.role = null;
     const code = newCode();
-    rooms.set(code, { code, players: [s.id], det: null, round: 0, ready: new Set() });
+    rooms.set(code, { code, players: [s.id], det: null, round: 0, ready: new Set(), score: {} });
     s.data.room = code; s.emit('room', { code }); counts();
   });
 
@@ -171,6 +194,45 @@ io.on('connection', s => {
     else { s.emit('roomWait'); const o = r.players.find(id => id !== s.id); to(o, 'friendReady'); }
   });
 
+  // Photos: friend rooms only, blurred on arrival.
+  s.on('photo', data => {
+    const g = games.get(s.data.game); if (!g || g.over || !g.room || !isJpeg(data)) return;
+    const now = Date.now(); if (now - (s.data.lastPhoto || 0) < 2000) return; s.data.lastPhoto = now;
+    if (g.det === s.id) {
+      if (g.act) to(g.act, 'photo', { data });
+      checkMission(g, '', true);
+      if (g.mode === 'roombot') setTimeout(() => {
+        if (g.over) return;
+        const last = [...g.msgs].reverse().find(m => m.from === 'det');
+        const text = bot.photoReply(bot.lang(last ? last.text : ''));
+        g.msgs.push({ from: 'sub', text }); to(g.det, 'msg', { text }); to(g.act, 'botmsg', { text });
+      }, 1800 + Math.random() * 1200);
+    } else if (g.act === s.id && g.mode === 'human') {
+      to(g.det, 'photo', { data });
+      if (g.dare && !g.dare.done) { g.dare.done = true; g.dare.ok = true; to(g.det, 'dareResult', { ok: true }); s.emit('dareResult', { ok: true }); }
+    }
+  });
+
+  // Dare (friend rooms): the detective dares the subject to send a photo of their hand. One per round.
+  s.on('dare', () => {
+    const g = games.get(s.data.game); if (!g || g.over || !g.room || g.det !== s.id || g.dare) return;
+    g.dare = { done: false, ok: false };
+    s.emit('dareSent');
+    if (g.mode === 'human') return to(g.act, 'dare');
+    setTimeout(() => {
+      if (g.over) return;
+      const last = [...g.msgs].reverse().find(m => m.from === 'det');
+      const text = bot.dareRefuse(bot.lang(last ? last.text : ''));
+      g.dare.done = true;
+      g.msgs.push({ from: 'sub', text }); to(g.det, 'msg', { text }); to(g.act, 'botmsg', { text });
+      to(g.det, 'dareResult', { ok: false }); to(g.act, 'dareResult', { ok: false, bot: true });
+    }, 2000 + Math.random() * 1500);
+  });
+  s.on('dareRefuse', () => {
+    const g = games.get(s.data.game); if (!g || g.over || g.act !== s.id || !g.dare || g.dare.done) return;
+    g.dare.done = true; to(g.det, 'dareResult', { ok: false }); s.emit('dareResult', { ok: false });
+  });
+
   s.on('leaveRoom', () => { leave(s); closeRoom(s); counts(); });
 
   s.on('practice', () => {
@@ -187,6 +249,7 @@ io.on('connection', s => {
     const g = games.get(s.data.game); if (!g || g.over) return;
     if (g.det === s.id) {
       g.msgs.push({ from: 'det', text });
+      checkMission(g, text, false);
       if (g.mode === 'human') { to(g.act, 'msg', { text }); suggest(g, text); }
       else if (g.mode === 'roombot') { to(g.act, 'msg', { text }); if (g.busy) g.pending = true; else botReply(g); }
       else if (g.busy) g.pending = true;
@@ -208,9 +271,20 @@ io.on('connection', s => {
     const left = Date.now() - g.start;
     if (left < SKIP_AFTER) return s.emit('voteWait', { ms: SKIP_AFTER - left });
     const vote = v === 'ai' ? 'ai' : 'human';
-    s.emit('result', { kind: 'det', ok: vote === g.truth, vote, truth: g.truth, mode: g.mode });
-    if (g.act && g.mode === 'roombot') to(g.act, 'result', { kind: 'watch', ok: vote === g.truth, vote });
-    else if (g.act) to(g.act, 'result', { kind: 'act', fooled: vote === 'ai', reason: '' });
+    // points: detective +1 for a correct call; faker +1 for fooling, +2 for the mission, +1 for a dare done
+    const pd = vote === g.truth ? 1 : 0;
+    let pa = 0;
+    if (g.mode === 'human') pa = (vote === 'ai' ? 1 : 0) + (g.mission && g.mission.done ? 2 : 0) + (g.dare && g.dare.ok ? 1 : 0);
+    const r = g.room && rooms.get(g.room);
+    let score = null;
+    if (r) {
+      r.score[g.det] = (r.score[g.det] || 0) + pd;
+      if (g.act) r.score[g.act] = (r.score[g.act] || 0) + pa;
+      score = id => ({ me: r.score[id] || 0, them: r.score[r.players.find(x => x !== id)] || 0 });
+    }
+    s.emit('result', { kind: 'det', ok: vote === g.truth, vote, truth: g.truth, mode: g.mode, pts: pd, score: score && score(g.det) });
+    if (g.act && g.mode === 'roombot') to(g.act, 'result', { kind: 'watch', ok: vote === g.truth, vote, pts: 0, score: score && score(g.act) });
+    else if (g.act) to(g.act, 'result', { kind: 'act', fooled: vote === 'ai', reason: '', pts: pa, mission: g.mission, score: score && score(g.act) });
     endGame(g);
   });
 
