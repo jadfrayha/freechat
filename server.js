@@ -8,7 +8,7 @@ const { Server } = require('socket.io');
 const bot = require('./bot');
 
 const PORT = process.env.PORT || 3000;
-const SKIP_AFTER = 90 * 1000; // minimum time before a game can be skipped or voted on (1:30)
+const SKIP_AFTER = (+process.env.MIN_SECONDS || 90) * 1000; // minimum time before a game can be skipped or voted on (1:30)
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
@@ -37,6 +37,30 @@ function endGame(g) {
   g.over = true; games.delete(g.id);
   for (const id of [g.det, g.act]) { const s = sock(id); if (s && s.data.game === g.id) s.data.game = null; }
 }
+// ---- friend rooms ----
+// A room holds two friends. Each round one is the detective and one the faker;
+// a coin flip decides if the faker types (human) or the bot answers for them (roombot).
+// Roles swap every round.
+const rooms = new Map(); // code -> { code, players: [id,id], det, round, ready:Set }
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function newCode() { let c; do { c = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join(''); } while (rooms.has(c)); return c; }
+function roomRound(r) {
+  const [a, b] = r.players; r.round++; r.ready = new Set();
+  r.det = r.round === 1 ? b : (r.det === a ? b : a);   // the friend who joined starts as detective
+  const act = r.det === a ? b : a;
+  const human = Math.random() < 0.5;
+  const g = newGame(human ? 'human' : 'roombot', human ? 'human' : 'ai', r.det, act);
+  g.room = r.code;
+  to(r.det, 'start', { mode: 'detective', room: r.code, round: r.round });
+  to(act, 'start', { mode: human ? 'actor' : 'watch', room: r.code, round: r.round });
+  if (human) suggest(g, null);
+}
+function closeRoom(s) {
+  const r = rooms.get(s.data.room); s.data.room = null;
+  if (!r) return;
+  rooms.delete(r.code);
+  for (const id of r.players) if (id !== s.id) { to(id, 'roomClosed'); const o = sock(id); if (o) o.data.room = null; }
+}
 function leave(s) {
   const g = games.get(s.data.game);
   if (g && !g.over) { const other = g.det === s.id ? g.act : g.det; to(other, 'left'); endGame(g); }
@@ -64,6 +88,7 @@ async function botReply(g) {
   g.busy = false;
   if (g.over) return;
   g.msgs.push({ from: 'sub', text }); to(g.det, 'msg', { text });
+  if (g.mode === 'roombot' && g.act) to(g.act, 'botmsg', { text });
   if (g.pending) { g.pending = false; botReply(g); }
 }
 async function detAsk(g) {
@@ -90,7 +115,7 @@ function suggest(g, last) {
 
 // ---- sockets ----
 io.on('connection', s => {
-  s.data = { role: null, game: null, last: 0 };
+  s.data = { role: null, game: null, last: 0, room: null };
   counts();
 
   s.on('role', r => {
@@ -123,6 +148,31 @@ io.on('connection', s => {
     counts();
   });
 
+  s.on('createRoom', () => {
+    leave(s); closeRoom(s); waiting.delete(s.id); s.data.role = null;
+    const code = newCode();
+    rooms.set(code, { code, players: [s.id], det: null, round: 0, ready: new Set() });
+    s.data.room = code; s.emit('room', { code }); counts();
+  });
+
+  s.on('joinRoom', raw => {
+    const code = typeof raw === 'string' ? raw.trim().toUpperCase().slice(0, 4) : '';
+    const r = rooms.get(code);
+    if (!r || r.players.length !== 1 || r.players[0] === s.id || !sock(r.players[0])) return s.emit('roomError');
+    leave(s); closeRoom(s); waiting.delete(s.id); s.data.role = null;
+    r.players.push(s.id); s.data.room = code;
+    roomRound(r); counts();
+  });
+
+  s.on('nextRound', () => {
+    const r = rooms.get(s.data.room); if (!r || r.players.length !== 2 || games.get(s.data.game)) return;
+    r.ready.add(s.id);
+    if (r.ready.size === 2) roomRound(r);
+    else { s.emit('roomWait'); const o = r.players.find(id => id !== s.id); to(o, 'friendReady'); }
+  });
+
+  s.on('leaveRoom', () => { leave(s); closeRoom(s); counts(); });
+
   s.on('practice', () => {
     if (s.data.role !== 'actor') return;
     leave(s); waiting.delete(s.id);
@@ -138,6 +188,7 @@ io.on('connection', s => {
     if (g.det === s.id) {
       g.msgs.push({ from: 'det', text });
       if (g.mode === 'human') { to(g.act, 'msg', { text }); suggest(g, text); }
+      else if (g.mode === 'roombot') { to(g.act, 'msg', { text }); if (g.busy) g.pending = true; else botReply(g); }
       else if (g.busy) g.pending = true;
       else botReply(g);
     } else if (g.act === s.id) {
@@ -158,7 +209,8 @@ io.on('connection', s => {
     if (left < SKIP_AFTER) return s.emit('voteWait', { ms: SKIP_AFTER - left });
     const vote = v === 'ai' ? 'ai' : 'human';
     s.emit('result', { kind: 'det', ok: vote === g.truth, vote, truth: g.truth, mode: g.mode });
-    if (g.act) to(g.act, 'result', { kind: 'act', fooled: vote === 'ai', reason: '' });
+    if (g.act && g.mode === 'roombot') to(g.act, 'result', { kind: 'watch', ok: vote === g.truth, vote });
+    else if (g.act) to(g.act, 'result', { kind: 'act', fooled: vote === 'ai', reason: '' });
     endGame(g);
   });
 
@@ -167,6 +219,8 @@ io.on('connection', s => {
     const g = games.get(s.data.game); if (!g || g.over) return;
     const left = Date.now() - g.start;
     if (left < SKIP_AFTER) return s.emit('skipWait', { ms: SKIP_AFTER - left });
+    const r = g.room && rooms.get(g.room);
+    if (r) { endGame(g); return roomRound(r); }  // in a friend room, skipping starts the next round
     const other = g.det === s.id ? g.act : g.det;
     if (other) to(other, 'left');
     endGame(g);
@@ -174,7 +228,7 @@ io.on('connection', s => {
   });
 
   s.on('leave', () => { leave(s); waiting.delete(s.id); counts(); });
-  s.on('disconnect', () => { leave(s); waiting.delete(s.id); counts(); });
+  s.on('disconnect', () => { leave(s); closeRoom(s); waiting.delete(s.id); counts(); });
 });
 
 server.listen(PORT, () => console.log(`Bot or Faker on :${PORT} (free built-in bot)`));

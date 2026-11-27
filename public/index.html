@@ -94,6 +94,13 @@ input{flex:1;font:16px var(--body);min-height:50px;padding:0 16px;border-radius:
 .ov h2{font-size:clamp(56px,11vw,84px);color:var(--red);transform:rotate(-6deg);border:6px solid var(--red);border-radius:14px;padding:4px 18px;animation:stamp .45s cubic-bezier(.2,1.5,.4,1)}
 @keyframes stamp{from{transform:rotate(-6deg) scale(1.7);opacity:0}to{transform:rotate(-6deg) scale(1);opacity:1}}
 .ov p{margin:0}
+.friend{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:center;margin-top:26px;background:var(--steel);color:#fff;border:2px solid var(--ink);border-radius:22px;padding:22px;box-shadow:6px 6px 0 var(--ink)}
+.friend h2{font-size:40px}.friend p{margin:6px 0 0;opacity:.9}
+.fctl{display:flex;flex-direction:column;gap:12px}.fctl .lbl{color:#fff;min-height:1em;margin:0}
+.joinf{display:flex;gap:10px;padding:0;border:0;background:none}
+.joinf input{text-transform:uppercase;letter-spacing:.3em;font-weight:800;text-align:center;max-width:150px}
+.codebig{font-family:var(--head);font-size:clamp(72px,16vw,128px);letter-spacing:.12em;line-height:1;background:var(--card);border:3px solid var(--ink);border-radius:20px;padding:10px 26px;box-shadow:6px 6px 0 var(--ink)}
+@media(max-width:760px){.friend{grid-template-columns:minmax(0,1fr)}}
 .foot{color:var(--mut);font-size:14px;text-align:center;padding-top:0}
 .off{background:var(--red);color:#fff;text-align:center;font-size:14px;padding:8px 16px;font-weight:600}
 @media(max-width:760px){.hero-in,.roles,.how{grid-template-columns:minmax(0,1fr)}.face{max-width:200px;order:-1}.gwrap{grid-template-columns:minmax(0,1fr)}.side{order:-1}.chat{height:66vh}.m{max-width:88%}#actPanel .tipsWrap{display:none}}
@@ -147,11 +154,27 @@ input{flex:1;font:16px var(--body);min-height:50px;padding:0 16px;border-radius:
       <button class="btn red" id="goAct" data-t="actB"></button>
     </article>
   </div>
+  <div class="friend">
+    <div><h2 data-t="roomH"></h2><p data-t="roomP"></p></div>
+    <div class="fctl">
+      <button class="btn red" id="mkRoom" data-t="roomNew"></button>
+      <form id="joinF" class="joinf"><input id="code" maxlength="4" autocomplete="off" autocapitalize="characters" aria-label="Room code"><button class="btn" data-t="roomJoin"></button></form>
+      <p class="lbl" id="roomErr" role="alert"></p>
+    </div>
+  </div>
   <div class="how">
     <div><b data-t="h1b"></b><span data-t="h1"></span></div>
     <div><b data-t="h2b"></b><span data-t="h2"></span></div>
     <div><b data-t="h3b"></b><span data-t="h3"></span></div>
   </div>
+</div></section>
+
+<section id="roomwait" class="band" hidden><div class="waitc">
+  <h2 data-t="roomWaitH"></h2>
+  <div class="codebig" id="codeBig"></div>
+  <p class="lbl" data-t="roomWaitP"></p>
+  <div class="row"><button class="btn red" id="copyLink" data-t="copy"></button><button class="btn ghost" id="roomBack" data-t="back"></button></div>
+  <p class="lbl" id="linkTxt" style="overflow-wrap:anywhere"></p>
 </div></section>
 
 <section id="wait" class="band" hidden><div class="waitc">
@@ -194,15 +217,15 @@ input{flex:1;font:16px var(--body);min-height:50px;padding:0 16px;border-radius:
 <script>
 {
 const T={
-en:{title:'Bot or Faker',tag:'Every subject swears it’s an AI. Some are lying. Pick a side.',detH:'I’m the Detective',detP:'Chat with a subject that claims to be an AI. Is it a real AI — or a human faking it? No time limit: chat as long as you like, then make the call.',detB:'Start interrogating',actH:'I’m the Faker',actP:'You’re human. Your job: make the detective believe you’re an AI. Wait for a live detective, or practice against the bot.',actB:'Put on the mask',h1b:'Detectives',h1:'get matched 50/50 with a real AI or a human faker.',h2b:'Fakers',h2:'score when the detective votes “Real AI”.',h3b:'Nobody online?',h3:'The bot fills in, so a round always starts.',waitH:'Waiting for a detective…',practice:'Practice with the bot',back:'Back',leave:'Leave',ph:'Type a message…',send:'Send',call:'Your call',vAi:'Real AI',vHu:'Human faking',hint:'Try trick questions, fast maths, opinions, slang.',sugH:'What an AI would say',stayH:'Stay in character',tips:['Open with “Certainly!” or “Great question!”','No typos, no slang, no feelings.','Use tidy lists and balanced answers.','Never pick a side on opinions.'],again:'Play again',lobby:'Back to lobby',subj:'Subject',detLive:'Detective · live player',detAi:'Detective · bot (practice)',sysDet:'You’re connected to a subject that says it’s an AI. Ask anything. Real bot, or human faker?',sysAct:'A detective is on the line. Act like an AI.',sysPrac:'Practice round: the bot is interrogating you. Convince it you’re an AI.',typing:'typing…',online:'{n} online · {d} detectives · {w} fakers waiting',connecting:'Connecting…',waitCount:'{d} detectives online now. Keep this page open.',correct:'Correct.',fooledYou:'Fooled you.',youSaid:'You said “{v}”. ',tAi:'It was the real bot.',tHu:'It was a real human pretending to be an AI.',tSim:'It was a human faker — played by the bot, since no live fakers were waiting.',fooled:'You fooled them.',busted:'Busted.',fooledP:'The detective voted “Real AI”. ',bustedP:'The detective saw a human behind the mask. ',left:'The other player left.',stats:'Your record — Detective: {a}/{b} correct · Faker: fooled {c}/{d}',thinking:'Thinking of AI-style lines…',langBtn:'العربية',kicker:'Live now · free · no sign-up',heroH:'Bot or <em>Faker?</em>',lead:'Two strangers. One question. Is the other side a bot, or a person pretending to be one?',skip:'Skip',skipIn:'Skip in {t}',voteLock:'Voting unlocks in {t}',offline:'Connection lost — reconnecting…'},
-ar:{title:'بوت ولا مزيّف؟',tag:'كل واحد بيحلف إنو ذكاء اصطناعي. في منن عم يكذبوا. اختار دورك.',detH:'أنا المحقّق',detP:'احكي مع حدا بيقول إنو ذكاء اصطناعي. هل هو AI حقيقي، ولا إنسان عم يمثّل؟ ما في وقت محدّد: احكي قدّ ما بدّك، وبعدين قرّر.',detB:'ابدأ التحقيق',actH:'أنا المزيّف',actP:'إنت إنسان، ومهمّتك تقنع المحقّق إنك ذكاء اصطناعي. استنّى محقّق حقيقي، أو تمرّن مع البوت.',actB:'البس القناع',h1b:'المحقّقين',h1:'بيطلعلن ٥٠/٥٠: يا AI حقيقي، يا إنسان مزيّف.',h2b:'المزيّفين',h2:'بيربحوا إذا المحقّق صوّت «AI حقيقي».',h3b:'ما في حدا أونلاين؟',h3:'البوت بيعبّي المحل، فدايماً في جولة.',waitH:'عم نستنّى محقّق…',practice:'تمرّن مع البوت',back:'رجوع',leave:'اطلع',ph:'اكتب رسالة…',send:'ابعت',call:'قرارك',vAi:'AI حقيقي',vHu:'إنسان مزيّف',hint:'جرّب أسئلة مفخّخة، حساب سريع، آراء، أو لهجة.',sugH:'شو كان الـAI رح يقول',stayH:'خلّيك بالدور',tips:['ابدأ بـ«أكيد!» أو «سؤال حلو!»','لا أغلاط، لا لهجة، لا مشاعر.','جاوب بنقاط مرتّبة ومتوازنة.','ما تاخد موقف بالآراء أبداً.'],again:'العب كمان مرّة',lobby:'رجوع للبداية',subj:'المشتبه فيه',detLive:'المحقّق · لاعب حقيقي',detAi:'المحقّق · بوت (تمرين)',sysDet:'إنت عم تحكي مع حدا بيقول إنو AI. اسأل شو ما بدّك. بوت حقيقي ولا إنسان مزيّف؟',sysAct:'في محقّق عالخط. تصرّف متل الـAI.',sysPrac:'جولة تمرين: البوت عم يحقّق معك. أقنعه إنك AI.',typing:'عم يكتب…',online:'{n} أونلاين · {d} محقّقين · {w} مزيّفين عم يستنّوا',connecting:'عم نتّصل…',waitCount:'في {d} محقّقين أونلاين هلّق. خلّي الصفحة مفتوحة.',correct:'صح!',fooledYou:'انضحك عليك.',youSaid:'إنت قلت «{v}». ',tAi:'كان البوت الحقيقي.',tHu:'كان إنسان حقيقي عم يمثّل إنو AI.',tSim:'كان مزيّف، بس لعبه البوت لأنو ما كان في لاعبين عم يستنّوا.',fooled:'ضحكت عليه!',busted:'انكشفت!',fooledP:'المحقّق صوّت «AI حقيقي». ',bustedP:'المحقّق شاف الإنسان ورا القناع. ',left:'اللاعب التاني طلع.',stats:'نتيجتك — محقّق: {a}/{b} صح · مزيّف: ضحكت على {c}/{d}',thinking:'عم فكّر بجمل متل الـAI…',langBtn:'English',kicker:'مباشر الآن · مجاني · بدون تسجيل',heroH:'بوت ولا <em>مزيّف؟</em>',lead:'غريبان وسؤال واحد. هل الطرف التاني بوت، ولا إنسان عم يمثّل إنو بوت؟',skip:'تخطّي',skipIn:'تخطّي بعد {t}',voteLock:'التصويت بيفتح بعد {t}',offline:'انقطع الاتصال — عم نرجع نتّصل…'}};
+en:{title:'Bot or Faker',tag:'Every subject swears it’s an AI. Some are lying. Pick a side.',detH:'I’m the Detective',detP:'Chat with a subject that claims to be an AI. Is it a real AI — or a human faking it? No time limit: chat as long as you like, then make the call.',detB:'Start interrogating',actH:'I’m the Faker',actP:'You’re human. Your job: make the detective believe you’re an AI. Wait for a live detective, or practice against the bot.',actB:'Put on the mask',h1b:'Detectives',h1:'get matched 50/50 with a real AI or a human faker.',h2b:'Fakers',h2:'score when the detective votes “Real AI”.',h3b:'Nobody online?',h3:'The bot fills in, so a round always starts.',waitH:'Waiting for a detective…',practice:'Practice with the bot',back:'Back',leave:'Leave',ph:'Type a message…',send:'Send',call:'Your call',vAi:'Real AI',vHu:'Human faking',hint:'Try trick questions, fast maths, opinions, slang.',sugH:'What an AI would say',stayH:'Stay in character',tips:['Open with “Certainly!” or “Great question!”','No typos, no slang, no feelings.','Use tidy lists and balanced answers.','Never pick a side on opinions.'],again:'Play again',lobby:'Back to lobby',subj:'Subject',detLive:'Detective · live player',detAi:'Detective · bot (practice)',sysDet:'You’re connected to a subject that says it’s an AI. Ask anything. Real bot, or human faker?',sysAct:'A detective is on the line. Act like an AI.',sysPrac:'Practice round: the bot is interrogating you. Convince it you’re an AI.',typing:'typing…',online:'{n} online · {d} detectives · {w} fakers waiting',connecting:'Connecting…',waitCount:'{d} detectives online now. Keep this page open.',correct:'Correct.',fooledYou:'Fooled you.',youSaid:'You said “{v}”. ',tAi:'It was the real bot.',tHu:'It was a real human pretending to be an AI.',tSim:'It was a human faker — played by the bot, since no live fakers were waiting.',fooled:'You fooled them.',busted:'Busted.',fooledP:'The detective voted “Real AI”. ',bustedP:'The detective saw a human behind the mask. ',left:'The other player left.',stats:'Your record — Detective: {a}/{b} correct · Faker: fooled {c}/{d}',thinking:'Thinking of AI-style lines…',langBtn:'العربية',roomH:'Play with a friend',roomP:'Make a private room and send your friend the code. Each round, the detective never knows if their friend is typing or the bot is answering for them. Roles swap every round.',roomNew:'Create a room',roomJoin:'Join',codePh:'CODE',roomWaitH:'Send this code to your friend',roomWaitP:'Or send the link. The game starts as soon as they join.',copy:'Copy link',copied:'Copied!',roomErr:'That room doesn’t exist or is full.',sysWatch:'This round the BOT answers for you. Watch: can your friend tell?',sysRoomDet:'Your friend is on the other side — or is it the bot answering for them? Find out.',watchOk:'They saw through it.',watchNo:'They were fooled!',watchP:'This round the bot answered for you. Your friend voted “{v}”.',nextRound:'Next round',waitFriend:'Waiting for your friend…',friendReady:'Your friend is ready for the next round.',roomClosed:'Your friend left the room.',roomLbl:'Room {c} · round {r}',kicker:'Live now · free · no sign-up',heroH:'Bot or <em>Faker?</em>',lead:'Two strangers. One question. Is the other side a bot, or a person pretending to be one?',skip:'Skip',skipIn:'Skip in {t}',voteLock:'Voting unlocks in {t}',offline:'Connection lost — reconnecting…'},
+ar:{title:'بوت ولا مزيّف؟',tag:'كل واحد بيحلف إنو ذكاء اصطناعي. في منن عم يكذبوا. اختار دورك.',detH:'أنا المحقّق',detP:'احكي مع حدا بيقول إنو ذكاء اصطناعي. هل هو AI حقيقي، ولا إنسان عم يمثّل؟ ما في وقت محدّد: احكي قدّ ما بدّك، وبعدين قرّر.',detB:'ابدأ التحقيق',actH:'أنا المزيّف',actP:'إنت إنسان، ومهمّتك تقنع المحقّق إنك ذكاء اصطناعي. استنّى محقّق حقيقي، أو تمرّن مع البوت.',actB:'البس القناع',h1b:'المحقّقين',h1:'بيطلعلن ٥٠/٥٠: يا AI حقيقي، يا إنسان مزيّف.',h2b:'المزيّفين',h2:'بيربحوا إذا المحقّق صوّت «AI حقيقي».',h3b:'ما في حدا أونلاين؟',h3:'البوت بيعبّي المحل، فدايماً في جولة.',waitH:'عم نستنّى محقّق…',practice:'تمرّن مع البوت',back:'رجوع',leave:'اطلع',ph:'اكتب رسالة…',send:'ابعت',call:'قرارك',vAi:'AI حقيقي',vHu:'إنسان مزيّف',hint:'جرّب أسئلة مفخّخة، حساب سريع، آراء، أو لهجة.',sugH:'شو كان الـAI رح يقول',stayH:'خلّيك بالدور',tips:['ابدأ بـ«أكيد!» أو «سؤال حلو!»','لا أغلاط، لا لهجة، لا مشاعر.','جاوب بنقاط مرتّبة ومتوازنة.','ما تاخد موقف بالآراء أبداً.'],again:'العب كمان مرّة',lobby:'رجوع للبداية',subj:'المشتبه فيه',detLive:'المحقّق · لاعب حقيقي',detAi:'المحقّق · بوت (تمرين)',sysDet:'إنت عم تحكي مع حدا بيقول إنو AI. اسأل شو ما بدّك. بوت حقيقي ولا إنسان مزيّف؟',sysAct:'في محقّق عالخط. تصرّف متل الـAI.',sysPrac:'جولة تمرين: البوت عم يحقّق معك. أقنعه إنك AI.',typing:'عم يكتب…',online:'{n} أونلاين · {d} محقّقين · {w} مزيّفين عم يستنّوا',connecting:'عم نتّصل…',waitCount:'في {d} محقّقين أونلاين هلّق. خلّي الصفحة مفتوحة.',correct:'صح!',fooledYou:'انضحك عليك.',youSaid:'إنت قلت «{v}». ',tAi:'كان البوت الحقيقي.',tHu:'كان إنسان حقيقي عم يمثّل إنو AI.',tSim:'كان مزيّف، بس لعبه البوت لأنو ما كان في لاعبين عم يستنّوا.',fooled:'ضحكت عليه!',busted:'انكشفت!',fooledP:'المحقّق صوّت «AI حقيقي». ',bustedP:'المحقّق شاف الإنسان ورا القناع. ',left:'اللاعب التاني طلع.',stats:'نتيجتك — محقّق: {a}/{b} صح · مزيّف: ضحكت على {c}/{d}',thinking:'عم فكّر بجمل متل الـAI…',langBtn:'English',roomH:'العب مع صاحبك',roomP:'اعمل غرفة خاصة وابعت الكود لصاحبك. بكل جولة، المحقّق ما بيعرف إذا صاحبه عم يكتب أو البوت عم يجاوب عنه. الأدوار بتتبدّل كل جولة.',roomNew:'اعمل غرفة',roomJoin:'فوت',codePh:'الكود',roomWaitH:'ابعت هالكود لصاحبك',roomWaitP:'أو ابعتله الرابط. اللعبة بتبلّش أوّل ما يفوت.',copy:'انسخ الرابط',copied:'تنسخ!',roomErr:'هالغرفة مش موجودة أو مليانة.',sysWatch:'هالجولة البوت عم يجاوب عنك. اتفرّج: صاحبك رح يكتشف؟',sysRoomDet:'صاحبك عالطرف التاني… ولا البوت عم يجاوب عنه؟ اكتشف.',watchOk:'كشفوها!',watchNo:'انضحك عليه!',watchP:'هالجولة البوت جاوب عنك. صاحبك صوّت «{v}».',nextRound:'الجولة الجاية',waitFriend:'عم نستنّى صاحبك…',friendReady:'صاحبك جاهز للجولة الجاية.',roomClosed:'صاحبك طلع من الغرفة.',roomLbl:'غرفة {c} · جولة {r}',kicker:'مباشر الآن · مجاني · بدون تسجيل',heroH:'بوت ولا <em>مزيّف؟</em>',lead:'غريبان وسؤال واحد. هل الطرف التاني بوت، ولا إنسان عم يمثّل إنو بوت؟',skip:'تخطّي',skipIn:'تخطّي بعد {t}',voteLock:'التصويت بيفتح بعد {t}',offline:'انقطع الاتصال — عم نرجع نتّصل…'}};
 const $=s=>document.querySelector(s);
 let lang='en';try{lang=localStorage.getItem('bof-lang')||(navigator.language||'').startsWith('ar')&&'ar'||'en'}catch(e){}
 const t=(k,v={})=>String(T[lang][k]).replace(/\{(\w)\}/g,(_,x)=>v[x]??'');
-let role=null,mode=null,over=false,online={total:0,det:0,wait:0},lastTyping=0,typT=null;
+let room=null,roomRoundN=0,role=null,mode=null,over=false,online={total:0,det:0,wait:0},lastTyping=0,typT=null;
 let stats={dc:0,dt:0,af:0,at:0};try{Object.assign(stats,JSON.parse(localStorage.getItem('bof-stats')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('bof-stats',JSON.stringify(stats))}catch(e){}};
-const show=k=>{for(const s of ['lobby','wait','game'])$('#'+s).hidden=s!==k};
+const show=k=>{for(const s of ['lobby','wait','game','roomwait'])$('#'+s).hidden=s!==k};
 
 function applyLang(){
   document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
@@ -217,7 +240,7 @@ function renderOnline(){
   $('#waitCount').textContent=t('waitCount',{d:online.det});
 }
 function renderStats(){$('#stats').textContent=t('stats',{a:stats.dc,b:stats.dt,c:stats.af,d:stats.at})}
-const whoLabel=()=>mode==='detective'?`${t('subj')} #${$('#who').dataset.n}`:mode==='practice'?t('detAi'):t('detLive');
+const whoLabel=()=>room?t('roomLbl',{c:room,r:roomRoundN}):mode==='detective'?`${t('subj')} #${$('#who').dataset.n}`:mode==='practice'?t('detAi'):t('detLive');
 function addMsg(text,cls){const d=document.createElement('div');d.className='m '+cls;d.textContent=text;$('#log').appendChild(d);$('#log').scrollTop=1e9}
 function setTyping(on){$('#typing').textContent=on?t('typing'):''}
 function renderSugs(list){
@@ -234,19 +257,22 @@ function startSkip(){skipEnd=Date.now()+90000;startSkipTick()}
 function startSkipTick(){clearInterval(skipT);skipT=setInterval(skipTick,500);skipTick()}
 function stopSkip(){skipEnd=0;clearInterval(skipT);skipT=null;const b=$('#skip');if(b){b.disabled=true;b.textContent=''}document.querySelectorAll('.v').forEach(v=>v.disabled=true)}
 const socket=io();
-socket.on('connect',()=>{$('#off').hidden=true;if(role)socket.emit('role',role);if(role==='actor'&&!mode)show('wait');renderOnline()});
+socket.on('connect',()=>{$('#off').hidden=true;{const h=(location.hash||'').slice(1).toUpperCase();if(/^[A-Z0-9]{4}$/.test(h)&&!room){history.replaceState(null,'',location.pathname);socket.emit('joinRoom',h)}}if(role)socket.emit('role',role);if(role==='actor'&&!mode)show('wait');renderOnline()});
 socket.on('disconnect',()=>{$('#off').hidden=false;if(mode&&!over){addMsg(t('left'),'sys');over=true;$('#msg').disabled=true}renderOnline()});
 socket.on('online',o=>{if(o&&typeof o==='object')online={total:+o.total||0,det:+o.det||0,wait:+o.wait||0};renderOnline()});
 socket.on('start',o=>{
+  if(o&&o.room){room=String(o.room).slice(0,4);roomRoundN=+o.round||1}
   mode=o&&o.mode;over=false;$('#result').hidden=true;startSkip();$('#log').innerHTML='';setTyping(false);
   $('#who').dataset.n=1000+Math.floor(Math.random()*9000);$('#who').textContent=whoLabel();
   $('#detPanel').hidden=mode!=='detective';$('#actPanel').hidden=mode==='detective';
   $('#msg').disabled=false;$('#msg').value='';
-  addMsg(t(mode==='detective'?'sysDet':mode==='practice'?'sysPrac':'sysAct'),'sys');
-  if(mode!=='detective')renderSugs(null);
+  $('#again').textContent=t(room?'nextRound':'again');$('#again').disabled=false;
+  if(mode==='watch'){$('#actPanel').hidden=true;$('#msg').disabled=true;addMsg(t('sysWatch'),'sys')}
+  else addMsg(t(room&&mode==='detective'?'sysRoomDet':mode==='detective'?'sysDet':mode==='practice'?'sysPrac':'sysAct'),'sys');
+  if(mode==='actor'||mode==='practice')renderSugs(null);
   $('#goDet').disabled=false;show('game');
 });
-socket.on('msg',o=>{if(!mode||over||!o||typeof o.text!=='string')return;setTyping(false);addMsg(o.text.slice(0,700),'them');if(mode!=='detective')renderSugs(null)});
+socket.on('msg',o=>{if(!mode||over||!o||typeof o.text!=='string')return;setTyping(false);addMsg(o.text.slice(0,700),'them');if(mode==='actor'||mode==='practice')renderSugs(null)});
 socket.on('typing',()=>{if(!mode||over)return;setTyping(true);clearTimeout(typT);typT=setTimeout(()=>setTyping(false),6000)});
 socket.on('sugs',l=>{if(mode&&mode!=='detective'&&Array.isArray(l))renderSugs(l)});
 socket.on('left',()=>{stopSkip();if(mode&&!over){addMsg(t('left'),'sys');if(mode!=='detective'){over=true;$('#msg').disabled=true}}});
@@ -254,6 +280,7 @@ socket.on('result',r=>{
   if(!r)return;
   if(r.kind==='det'){stats.dt++;if(r.ok)stats.dc++;save();
     showResult(t(r.ok?'correct':'fooledYou'),t('youSaid',{v:t(r.vote==='ai'?'vAi':'vHu')})+t(r.truth==='ai'?'tAi':r.mode==='human'?'tHu':'tSim'))}
+  else if(r.kind==='watch'){showResult(t(r.ok?'watchOk':'watchNo'),t('watchP',{v:t(r.vote==='ai'?'vAi':'vHu')}))}
   else{stats.at++;if(r.fooled)stats.af++;save();
     showResult(t(r.fooled?'fooled':'busted'),t(r.fooled?'fooledP':'bustedP')+(typeof r.reason==='string'?r.reason.slice(0,240):''))}
 });
@@ -265,13 +292,25 @@ $('#goDet').addEventListener('click',startDet);
 $('#goAct').addEventListener('click',goWait);
 $('#waitBack').addEventListener('click',toLobby);
 $('#practice').addEventListener('click',()=>socket.emit('practice'));
-$('#leave').addEventListener('click',()=>{socket.emit('leave');role==='actor'?goWait():toLobby()});
-$('#toLobby').addEventListener('click',toLobby);
-$('#again').addEventListener('click',()=>role==='detective'?startDet():goWait());
+$('#leave').addEventListener('click',()=>{if(room)return leaveRoom();socket.emit('leave');role==='actor'?goWait():toLobby()});
+$('#toLobby').addEventListener('click',()=>room?leaveRoom():toLobby());
+$('#again').addEventListener('click',()=>{if(room){socket.emit('nextRound');return}if($('#again').textContent===t('lobby')){$('#result').hidden=true;mode=null;role=null;show('lobby');return}role==='detective'?startDet():goWait()});
+socket.on('botmsg',o=>{if(mode==='watch'&&!over&&o&&typeof o.text==='string')addMsg(o.text.slice(0,700),'me')});
+socket.on('roomWait',()=>{$('#again').disabled=true;$('#again').textContent=t('waitFriend')});
+socket.on('friendReady',()=>{if(!$('#result').hidden)$('#rP').textContent+=' '+t('friendReady')});
+socket.on('roomClosed',()=>{room=null;stopSkip();if(!$('#roomwait').hidden){show('lobby');return}showResult(t('left'),t('roomClosed'));$('#again').textContent=t('lobby')});
+socket.on('room',o=>{if(!o||typeof o.code!=='string')return;room=o.code.slice(0,4);$('#codeBig').textContent=room;$('#linkTxt').textContent=roomLink();show('roomwait')});
+socket.on('roomError',()=>{$('#roomErr').textContent=t('roomErr');show('lobby')});
+const roomLink=()=>location.origin+'/#'+room;
+function leaveRoom(){socket.emit('leaveRoom');room=null;roomRoundN=0;mode=null;role=null;$('#result').hidden=true;stopSkip();show('lobby')}
+$('#mkRoom').addEventListener('click',()=>{$('#roomErr').textContent='';socket.emit('createRoom')});
+$('#joinF').addEventListener('submit',e=>{e.preventDefault();const c=$('#code').value.trim().toUpperCase();if(c.length===4){$('#roomErr').textContent='';socket.emit('joinRoom',c)}});
+$('#roomBack').addEventListener('click',leaveRoom);
+$('#copyLink').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(roomLink());$('#copyLink').textContent=t('copied');setTimeout(()=>$('#copyLink').textContent=t('copy'),1500)}catch(e){$('#linkTxt').textContent=roomLink()}});
 document.querySelectorAll('.v').forEach(b=>b.addEventListener('click',()=>{if(!over&&mode==='detective')socket.emit('vote',b.dataset.v)}));
 socket.on('skipWait',o=>{if(o&&o.ms>0){skipEnd=Date.now()+o.ms;startSkipTick()}});
 socket.on('voteWait',o=>{if(o&&o.ms>0){skipEnd=Date.now()+o.ms;startSkipTick()}});
-socket.on('skipped',()=>{stopSkip();mode=null;over=true;if(role==='detective')startDet();else goWait()});
+socket.on('skipped',()=>{if(room)return;stopSkip();mode=null;over=true;if(role==='detective')startDet();else goWait()});
 $('#skip').addEventListener('click',()=>{if(mode&&!over)socket.emit('skip')});
 $('#form').addEventListener('submit',e=>{e.preventDefault();const v=$('#msg').value.trim();if(!v||!mode||over)return;$('#msg').value='';addMsg(v,'me');socket.emit('msg',v.slice(0,600))});
 $('#msg').addEventListener('input',()=>{if(mode&&!over&&Date.now()-lastTyping>1500){lastTyping=Date.now();socket.emit('typing')}});
